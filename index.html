@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Differential Geometry — Field Notes</title>
+    <meta name="description" content="An interactive graduate course in Differential Geometry. Explore smooth manifolds, Riemannian metrics, geodesics, and information geometry through live simulations.">
+
+    <!-- KaTeX for rendering equations -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body);"></script>
+
+    <!-- Plotly.js for 3D visualizations -->
+    <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
+
+    <!-- CSS stylesheet (imports Google Fonts internally) -->
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/workbench.css">
+</head>
+<body>
+    <div class="app-container">
+        
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="brand">
+                <span class="brand-icon">Δ</span>
+                <h1>DiffGeom</h1>
+            </div>
+            
+            <nav class="nav-menu">
+                <div class="nav-section-title">Phase 2: Smooth Manifolds</div>
+                <a href="#" class="nav-item active" data-module="m2_1">
+                    <span class="nav-number">2.1</span>
+                    <span class="nav-title">Charts &amp; Atlases</span>
+                </a>
+                <a href="#" class="nav-item" data-module="m2_2">
+                    <span class="nav-number">2.2</span>
+                    <span class="nav-title">Tangent Spaces</span>
+                </a>
+                <a href="#" class="nav-item" data-module="m2_3">
+                    <span class="nav-number">2.3</span>
+                    <span class="nav-title">Pushforwards &amp; Pullbacks</span>
+                </a>
+                <a href="#" class="nav-item" data-module="m2_4">
+                    <span class="nav-number">2.4</span>
+                    <span class="nav-title">Tensor Algebra</span>
+                </a>
+
+                <div class="nav-section-title">Phase 3: Riemannian Geometry</div>
+                <a href="#" class="nav-item" data-module="m3_1">
+                    <span class="nav-number">3.1</span>
+                    <span class="nav-title">Riemannian Metrics</span>
+                </a>
+                <a href="#" class="nav-item" data-module="m3_2">
+                    <span class="nav-number">3.2</span>
+                    <span class="nav-title">Affine Connections</span>
+                </a>
+                <a href="#" class="nav-item" data-module="m3_3">
+                    <span class="nav-number">3.3</span>
+                    <span class="nav-title">Levi-Civita Connection</span>
+                </a>
+                <a href="#" class="nav-item" data-module="m3_4">
+                    <span class="nav-number">3.4</span>
+                    <span class="nav-title">Geodesics</span>
+                </a>
+                <a href="#" class="nav-item" data-module="m3_5">
+                    <span class="nav-number">3.5</span>
+                    <span class="nav-title">Information Curvature</span>
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <p>api <span class="status-indicator">● online</span></p>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <header class="content-header">
+                <div class="breadcrumb">
+                    <span id="breadcrumb-phase">Phase 2</span> / <span id="breadcrumb-module">Module 2.1</span>
+                </div>
+                <h2 id="module-title">Charts and Atlases</h2>
+            </header>
+
+            <div class="grid-layout">
+                
+                <!-- Left Pane: SBL Scrollytelling (Theory) -->
+                <div class="pane pane-left" id="left-pane-scroll">
+
+                    <!-- Hook: 1-sentence motivator -->
+                    <section class="card hook-card">
+                        <p id="hook-text"></p>
+                    </section>
+
+                    <!-- Lecture Notes (Sections will be injected here) -->
+                    <div id="theory-content">
+                        <!-- Sections injected dynamically via JS -->
+                    </div>
+                </div>
+
+                <!-- Right Pane: Sticky Simulation Container -->
+                <div class="pane pane-right sticky-pane">
+                    
+                    <!-- Simulation Task Panel -->
+                    <section class="card task-card">
+                        <div class="task-header">
+                            <span class="task-icon">🎯</span>
+                            <span class="task-label">Simulation Task</span>
+                        </div>
+                        <div class="task-mission" id="task-mission"></div>
+                        <div class="task-question" id="task-question"></div>
+                        <button class="task-hint-btn" id="task-hint-btn" onclick="toggleHint()">Show Hint</button>
+                        <div class="task-hint" id="task-hint" style="display:none;"></div>
+                    </section>
+
+                    <!-- Unified 3-way toggle for Visualization/Workbench/Code -->
+                    <section class="card unified-card">
+                        <div class="workbench-tabs">
+                            <span class="wb-tab active" data-tab="viz">Visualization</span>
+                            <span class="wb-tab" data-tab="workbench">Algebra Workbench</span>
+                            <span class="wb-tab" data-tab="code">Python Source</span>
+                        </div>
+
+                        <div id="viz-panel" class="wb-tab-content active">
+                            <div id="plot-container">
+                                <div id="plotly-div"></div>
+                            </div>
+                        </div>
+
+                        <div id="workbench-panel" class="wb-tab-content">
+                            <div id="workbench-container">
+                                <div class="wb-empty">
+                                    <span class="wb-empty-icon">∂</span>
+                                    Loading workbench…
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="code-panel" class="wb-tab-content">
+                            <pre><code class="language-python" id="code-snippet"># NumPy code will load here...</code></pre>
+                        </div>
+                    </section>
+
+                    <!-- Parameter Controls -->
+                    <section class="card controls-card">
+                        <h3>Interactive Parameters</h3>
+                        <div id="controls-container" class="controls-grid">
+                            <!-- Injected dynamically based on active section -->
+                        </div>
+                    </section>
+
+                    <!-- Real-Time Metrics Output -->
+                    <section class="card stats-card">
+                        <h3>Calculated Metrics</h3>
+                        <div id="stats-container" class="stats-grid">
+                            <!-- Injected dynamically -->
+                        </div>
+                    </section>
+
+                </div>
+                
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/numpy_snippets.js"></script>
+    <script src="js/workbench.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

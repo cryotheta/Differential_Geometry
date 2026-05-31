@@ -1,0 +1,1011 @@
+/* ============================================================
+   DIFFERENTIAL GEOMETRY — Redesign 2026
+   Aesthetic: Indie Web × Retro Terminal × Academic Press
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,600;1,400&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Space+Grotesk:wght@400;500;700&family=Special+Elite&display=swap');
+
+/* ---- Design Tokens ---- */
+:root {
+    /* Palette: aged paper × ink × neon accents */
+    --ink:          #1a1209;
+    --ink-soft:     #3d3020;
+    --paper:        #f5f0e8;
+    --paper-warm:   #ede7d6;
+    --paper-grid:   #e0d8c8;
+    --parchment:    #d6ccb4;
+
+    --sidebar-bg:   #111009;
+    --sidebar-border: #2e2a1e;
+
+    --accent-red:   #c23b22;   /* vintage red */
+    --accent-amber: #d97706;   /* amber ink */
+    --accent-teal:  #0e7490;   /* blueprint teal */
+    --accent-sage:  #4a7c59;   /* academic green */
+    --accent-violet:#7c3aed;   /* indie pop violet */
+    --neon-lime:    #a3e635;   /* retro terminal green */
+    --neon-cyan:    #22d3ee;
+
+    --terminal-bg:  #0a0e06;
+    --terminal-text:#b8f7a8;
+    --terminal-dim: #4a6a40;
+
+    --font-serif:   'Libre Baskerville', Georgia, serif;
+    --font-mono:    'IBM Plex Mono', 'Courier New', monospace;
+    --font-display: 'Special Elite', 'Courier New', monospace;
+    --font-ui:      'Space Grotesk', system-ui, sans-serif;
+
+    --sidebar-width: 270px;
+    --radius-sm: 2px;
+    --radius-md: 4px;
+    --border-ink: 2px solid var(--ink);
+    --border-dashed: 1px dashed var(--parchment);
+    --transition: 0.18s ease;
+}
+
+/* ---- Reset ---- */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+/* ---- Body: Scanline paper texture ---- */
+body {
+    background-color: var(--sidebar-bg);
+    color: var(--ink);
+    font-family: var(--font-serif);
+    line-height: 1.65;
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+    /* subtle scanlines on body */
+    background-image:
+        repeating-linear-gradient(
+            0deg,
+            transparent,
+            transparent 2px,
+            rgba(255,255,255,0.012) 2px,
+            rgba(255,255,255,0.012) 4px
+        );
+}
+
+/* ============================================================
+   SIDEBAR
+   ============================================================ */
+.app-container {
+    display: flex;
+    height: 100vh;
+    width: 100vw;
+}
+
+.sidebar {
+    width: var(--sidebar-width);
+    background-color: var(--sidebar-bg);
+    border-right: 2px solid var(--sidebar-border);
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    z-index: 10;
+    flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Retro vertical text decoration */
+.sidebar::before {
+    content: '∂g/∂t = 0';
+    position: absolute;
+    bottom: 80px;
+    left: -24px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: rgba(163, 230, 53, 0.12);
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    letter-spacing: 3px;
+    pointer-events: none;
+}
+
+/* Brand header — zine stamp style */
+.brand {
+    padding: 20px 18px 16px;
+    border-bottom: 2px solid var(--sidebar-border);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    position: relative;
+}
+
+.brand::after {
+    content: 'FIELD NOTES';
+    position: absolute;
+    top: 8px;
+    right: 14px;
+    font-family: var(--font-mono);
+    font-size: 8px;
+    color: var(--terminal-dim);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+}
+
+.brand-icon {
+    font-family: var(--font-display);
+    font-size: 32px;
+    color: var(--neon-lime);
+    text-shadow: 0 0 12px rgba(163, 230, 53, 0.4);
+    line-height: 1;
+}
+
+.brand h1 {
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-weight: normal;
+    color: var(--paper-warm);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+/* Nav scroll area */
+.nav-menu {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    padding: 12px 0 0;
+}
+
+.nav-menu::-webkit-scrollbar { width: 3px; }
+.nav-menu::-webkit-scrollbar-thumb {
+    background: var(--sidebar-border);
+    border-radius: 0;
+}
+
+/* Section titles — typewriter catalog style */
+.nav-section-title {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--terminal-dim);
+    letter-spacing: 3px;
+    padding: 16px 18px 6px;
+    border-top: 1px solid var(--sidebar-border);
+    margin-top: 8px;
+    position: relative;
+}
+
+.nav-section-title:first-of-type {
+    margin-top: 0;
+    border-top: none;
+}
+
+/* Nav items — index card style */
+.nav-item {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 8px 18px;
+    text-decoration: none;
+    color: rgba(232, 220, 196, 0.55);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    transition: all var(--transition);
+    border-left: 3px solid transparent;
+    line-height: 1.4;
+}
+
+.nav-item:hover {
+    color: var(--paper-warm);
+    background: rgba(163, 230, 53, 0.04);
+    border-left-color: var(--terminal-dim);
+}
+
+.nav-item.active {
+    color: var(--neon-lime);
+    background: rgba(163, 230, 53, 0.06);
+    border-left-color: var(--neon-lime);
+}
+
+.nav-number {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--terminal-dim);
+    min-width: 28px;
+    font-weight: 600;
+}
+
+.nav-item.active .nav-number {
+    color: var(--neon-lime);
+}
+
+.nav-title {
+    font-size: 12px;
+    line-height: 1.3;
+}
+
+/* Sidebar footer — stamp/system status */
+.sidebar-footer {
+    padding: 12px 18px;
+    border-top: 1px solid var(--sidebar-border);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--terminal-dim);
+}
+
+.status-indicator {
+    color: var(--neon-lime);
+    animation: blink 1.6s step-end infinite;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.2; }
+}
+
+/* ============================================================
+   MAIN CONTENT — Paper/Academic layout
+   ============================================================ */
+.main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background-color: var(--paper);
+    /* graph-paper grid */
+    background-image:
+        linear-gradient(to right, var(--paper-grid) 1px, transparent 1px),
+        linear-gradient(to bottom, var(--paper-grid) 1px, transparent 1px);
+    background-size: 28px 28px;
+    position: relative;
+}
+
+/* Faded stamp watermark */
+.main-content::before {
+    content: 'RIEMANNIAN';
+    position: absolute;
+    bottom: 40px;
+    right: 40px;
+    font-family: var(--font-display);
+    font-size: 64px;
+    color: rgba(26,18,9,0.025);
+    letter-spacing: 8px;
+    text-transform: uppercase;
+    pointer-events: none;
+    user-select: none;
+    transform: rotate(-12deg);
+    z-index: 0;
+}
+
+/* Content Header — torn paper edge style */
+.content-header {
+    padding: 14px 28px 12px;
+    border-bottom: 2px solid var(--ink);
+    background-color: var(--paper-warm);
+    position: relative;
+    z-index: 1;
+}
+
+.breadcrumb {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 2px;
+    opacity: 0.7;
+}
+
+#breadcrumb-phase {
+    color: var(--accent-teal);
+}
+
+#breadcrumb-module {
+    color: var(--accent-red);
+}
+
+.content-header h2 {
+    font-family: var(--font-serif);
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--ink);
+    font-style: italic;
+    letter-spacing: -0.3px;
+}
+
+/* ============================================================
+   GRID LAYOUT
+   ============================================================ */
+.grid-layout {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 0;
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+    z-index: 1;
+}
+
+/* Split pane divider */
+.grid-layout::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    height: 100%;
+    background: var(--ink);
+    opacity: 0.12;
+    pointer-events: none;
+}
+
+.pane {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    height: 100%;
+    overflow-y: auto;
+    padding: 20px 24px;
+}
+
+.pane::-webkit-scrollbar { width: 5px; }
+.pane::-webkit-scrollbar-track { background: var(--paper-grid); }
+.pane::-webkit-scrollbar-thumb {
+    background: var(--parchment);
+    border-radius: 0;
+}
+
+.pane-left {
+    border-right: 1px solid var(--parchment);
+    gap: 20px;
+    padding-bottom: 50vh; /* Allow scrolling past the last section */
+    scroll-behavior: smooth;
+}
+
+.pane-right {
+    gap: 0;
+    padding: 20px 24px;
+    overflow-y: hidden; /* Prevent scrolling, acts as sticky relative to left pane */
+}
+
+/* Scrollytelling Sections */
+.theory-section {
+    padding: 16px 20px;
+    margin-bottom: 40px;
+    border-left: 4px solid transparent;
+    transition: all 0.3s ease;
+    opacity: 0.4;
+}
+
+.theory-section.active {
+    opacity: 1;
+    border-left-color: var(--accent-teal);
+    background: linear-gradient(90deg, rgba(14, 116, 144, 0.05) 0%, transparent 100%);
+}
+
+.theory-section h3 {
+    font-family: var(--font-serif);
+    color: var(--ink);
+    font-size: 19px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    letter-spacing: -0.2px;
+}
+
+/* ============================================================
+   CARDS — Academic typeset blocks
+   ============================================================ */
+.card {
+    background: transparent;
+    border: none;
+    padding: 0;
+    position: relative;
+}
+
+/* Theory card: handset-typeset block */
+.text-card {
+    position: relative;
+}
+
+.text-card::before {
+    /* Margin line — academic journal style */
+    content: '';
+    position: absolute;
+    left: -12px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--accent-red);
+    opacity: 0.3;
+}
+
+.text-card h4 {
+    font-family: var(--font-serif);
+    color: var(--ink);
+    font-size: 17px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    letter-spacing: -0.2px;
+    position: relative;
+    padding-bottom: 8px;
+}
+
+.text-card h4::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 40px;
+    height: 2px;
+    background: var(--accent-red);
+}
+
+.text-card p {
+    color: var(--ink-soft);
+    font-family: var(--font-serif);
+    font-size: 13.5px;
+    margin-bottom: 10px;
+    text-align: justify;
+    hyphens: auto;
+    line-height: 1.7;
+}
+
+.text-card p:last-child { margin-bottom: 0; }
+
+/* Hook Card — prominent 1-sentence motivator */
+.hook-card {
+    padding: 14px 16px;
+    border-left: 4px solid var(--accent-teal);
+    background: linear-gradient(135deg, rgba(14, 116, 144, 0.06), transparent);
+}
+
+.hook-card p {
+    font-family: var(--font-serif);
+    font-size: 15px;
+    font-style: italic;
+    font-weight: 400;
+    color: var(--ink);
+    line-height: 1.6;
+    margin: 0;
+}
+
+/* Task Card — SBL mission panel */
+.task-card {
+    padding: 16px;
+    border: 1.5px solid var(--accent-amber);
+    background: linear-gradient(135deg, rgba(217, 119, 6, 0.05), rgba(217, 119, 6, 0.02));
+    border-radius: var(--radius-sm);
+    position: relative;
+}
+
+.task-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.task-icon {
+    font-size: 16px;
+}
+
+.task-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    color: var(--accent-amber);
+}
+
+.task-mission {
+    font-family: var(--font-serif);
+    font-size: 13px;
+    color: var(--ink);
+    line-height: 1.65;
+    margin-bottom: 10px;
+    padding-left: 2px;
+}
+
+.task-question {
+    font-family: var(--font-serif);
+    font-size: 13px;
+    font-style: italic;
+    color: var(--ink-soft);
+    line-height: 1.65;
+    margin-bottom: 10px;
+    padding: 8px 12px;
+    border-left: 3px solid var(--accent-amber);
+    background: rgba(217, 119, 6, 0.04);
+}
+
+.task-question::before {
+    content: '❓ ';
+}
+
+.task-hint-btn {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--accent-amber);
+    background: transparent;
+    border: 1px solid var(--accent-amber);
+    padding: 4px 12px;
+    cursor: pointer;
+    transition: all var(--transition);
+}
+
+.task-hint-btn:hover {
+    background: rgba(217, 119, 6, 0.1);
+}
+
+.task-hint {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--ink-soft);
+    line-height: 1.6;
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: rgba(217, 119, 6, 0.06);
+    border-radius: var(--radius-sm);
+}
+
+/* Lecture Notes Card */
+.lecture-notes-card {
+    margin-top: 8px;
+}
+
+.lecture-notes-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--parchment);
+}
+
+.lecture-notes-icon {
+    font-size: 16px;
+}
+
+.lecture-notes-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    color: var(--accent-sage);
+}
+
+/* Lecture notes internal headings */
+.text-card h5 {
+    font-family: var(--font-serif);
+    font-size: 14.5px;
+    font-weight: 700;
+    color: var(--ink);
+    margin: 18px 0 8px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--parchment);
+}
+
+.text-card h5:first-of-type {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+}
+
+/* Definition / Theorem blocks in lecture notes */
+.def-block {
+    margin: 10px 0;
+    padding: 10px 14px;
+    background: var(--paper-warm);
+    border-left: 3px solid var(--accent-sage);
+    border-radius: 0;
+}
+
+.def-block .def-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--accent-sage);
+    margin-bottom: 4px;
+}
+
+.thm-block {
+    margin: 10px 0;
+    padding: 10px 14px;
+    background: rgba(14, 116, 144, 0.04);
+    border-left: 3px solid var(--accent-teal);
+    border-radius: 0;
+}
+
+.thm-block .thm-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--accent-teal);
+    margin-bottom: 4px;
+}
+
+/* Viz/Workbench reference callouts in lecture notes */
+.viz-ref {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--accent-violet);
+    font-style: italic;
+    display: block;
+    margin: 6px 0;
+    padding-left: 8px;
+    border-left: 2px solid var(--accent-violet);
+    opacity: 0.85;
+}
+
+.text-card strong {
+    font-weight: 700;
+    color: var(--ink);
+}
+
+.text-card code {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    background: var(--paper-warm);
+    border: 1px solid var(--parchment);
+    padding: 1px 5px;
+    border-radius: 2px;
+    color: var(--accent-teal);
+}
+
+/* KaTeX display equations — theorem box */
+.katex-display {
+    margin: 14px 0 !important;
+    padding: 10px 14px;
+    background: var(--paper-warm);
+    border-left: 3px solid var(--accent-teal);
+    border-radius: 0;
+    overflow-x: auto;
+    font-size: 0.95em;
+}
+
+/* Controls card — instrument panel */
+.controls-card {
+    padding: 16px;
+    border: 1px solid var(--parchment);
+    background: var(--paper-warm);
+    border-radius: var(--radius-sm);
+    position: relative;
+    margin-top: 4px;
+}
+
+.controls-card::before {
+    content: '[ PARAMETERS ]';
+    position: absolute;
+    top: -9px;
+    left: 12px;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 3px;
+    color: var(--ink-soft);
+    background: var(--paper-warm);
+    padding: 0 6px;
+}
+
+.controls-card h3 {
+    display: none; /* replaced by ::before pseudo label */
+}
+
+.controls-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.control-label-wrapper {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--ink-soft);
+}
+
+.control-val {
+    font-family: var(--font-mono);
+    color: var(--accent-teal);
+    font-weight: 600;
+    font-size: 11px;
+    min-width: 36px;
+    text-align: right;
+}
+
+/* Dropdown styling */
+select.form-control {
+    background-color: var(--paper);
+    border: 1px solid var(--parchment);
+    border-radius: var(--radius-sm);
+    color: var(--ink);
+    padding: 6px 10px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    outline: none;
+    cursor: pointer;
+    transition: border-color var(--transition);
+    width: 100%;
+    -webkit-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23888'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+}
+
+select.form-control:focus {
+    border-color: var(--accent-teal);
+    outline: 1px solid var(--accent-teal);
+}
+
+/* Slider inputs — vintage dial style */
+input[type=range] {
+    -webkit-appearance: none;
+    width: 100%;
+    background: transparent;
+    cursor: pointer;
+}
+
+input[type=range]:focus { outline: none; }
+
+input[type=range]::-webkit-slider-runnable-track {
+    width: 100%;
+    height: 4px;
+    background: var(--parchment);
+    border: 1px solid #c9bfaa;
+    border-radius: 0;
+}
+
+input[type=range]::-webkit-slider-thumb {
+    height: 14px;
+    width: 8px;
+    border-radius: 0;
+    background: var(--accent-teal);
+    cursor: pointer;
+    -webkit-appearance: none;
+    margin-top: -5px;
+    transition: background var(--transition);
+    border: 1px solid var(--ink);
+}
+
+input[type=range]:hover::-webkit-slider-thumb {
+    background: var(--accent-red);
+}
+
+/* Stats card — index card style */
+.stats-card {
+    padding: 16px;
+    border: 1px solid var(--parchment);
+    background: var(--paper-warm);
+    border-radius: var(--radius-sm);
+    position: relative;
+    margin-top: 4px;
+}
+
+.stats-card::before {
+    content: '[ METRICS ]';
+    position: absolute;
+    top: -9px;
+    left: 12px;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 3px;
+    color: var(--ink-soft);
+    background: var(--paper-warm);
+    padding: 0 6px;
+}
+
+.stats-card h3 {
+    display: none;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+}
+
+.stat-item {
+    background: var(--paper);
+    border: 1px solid var(--paper-grid);
+    border-radius: var(--radius-sm);
+    padding: 8px 10px;
+}
+
+.stat-label {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 3px;
+    opacity: 0.7;
+}
+
+.stat-value {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent-sage);
+    word-break: break-all;
+}
+
+/* ============================================================
+   VISUALIZER PANE — Dark terminal window
+   ============================================================ */
+.pane-right {
+    background: var(--terminal-bg);
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* Unified card — single full-height card with 3-way toggle */
+.unified-card {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    min-height: 0;
+    background: var(--terminal-bg);
+    border: none;
+    overflow: hidden;
+}
+
+/* CRT scanline overlay on viz panel */
+#viz-panel::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 3px,
+        rgba(0, 0, 0, 0.08) 3px,
+        rgba(0, 0, 0, 0.08) 4px
+    );
+    pointer-events: none;
+    z-index: 2;
+}
+
+#viz-panel {
+    position: relative;
+}
+
+#plot-container {
+    flex: 1;
+    position: relative;
+    background: var(--terminal-bg);
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+}
+
+#plotly-div {
+    width: 100%;
+    height: 100%;
+}
+
+/* ============================================================
+   CODE PANEL — Typewriter receipt
+   ============================================================ */
+#code-panel pre {
+    flex: 1;
+    margin: 0;
+    padding: 16px 20px;
+    background: #060905;
+    overflow-y: auto;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--terminal-text);
+    line-height: 1.55;
+    tab-size: 4;
+    white-space: pre;
+}
+
+#code-panel pre code {
+    display: block;
+    counter-reset: line;
+}
+
+#code-panel pre::-webkit-scrollbar { width: 4px; height: 4px; }
+#code-panel pre::-webkit-scrollbar-thumb {
+    background: #1e2a14;
+    border-radius: 0;
+}
+
+/* ============================================================
+   LABEL TYPOGRAPHY
+   ============================================================ */
+label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--ink-soft);
+}
+
+/* Labels inside controls are rendered via innerHTML with katex */
+.control-label-wrapper label .katex {
+    font-size: 1em;
+}
+
+/* ============================================================
+   UTILITY: Highlighted tags / badges
+   ============================================================ */
+.badge {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    padding: 2px 7px;
+    border: 1px solid currentColor;
+    border-radius: 0;
+    vertical-align: middle;
+}
+
+/* ============================================================
+   RESPONSIVE — single column on narrow viewports
+   ============================================================ */
+@media (max-width: 1100px) {
+    .grid-layout {
+        grid-template-columns: 1fr;
+        overflow-y: auto;
+    }
+    .pane-right {
+        height: 700px;
+    }
+    body { overflow-y: auto; }
+}
+
+/* ============================================================
+   MISC POLISH
+   ============================================================ */
+
+/* Faint horizontal rule between content sections */
+.pane-left > .card + .card {
+    padding-top: 16px;
+    margin-top: 4px;
+    border-top: 1px dashed var(--parchment);
+}
+
+/* Subtle page number in top-right corner of main content */
+.content-header::after {
+    content: 'dg / 2026';
+    position: absolute;
+    right: 28px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--parchment);
+    letter-spacing: 2px;
+}
+
+/* Hover states for stat items */
+.stat-item:hover {
+    border-color: var(--accent-teal);
+    transition: border-color var(--transition);
+}
+
+/* Selection color */
+::selection {
+    background: rgba(14, 116, 144, 0.25);
+    color: var(--ink);
+}

@@ -1,0 +1,708 @@
+/* ============================================================
+   ALGEBRA WORKBENCH — Computation Visualizer
+   Aesthetic: Retro Terminal × Academic Chalkboard
+   ============================================================ */
+
+/* --- Container & Tab Switching --- */
+.workbench-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid #131a0b;
+    background: #080b05;
+    padding: 0;
+}
+
+.workbench-tabs .wb-tab {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--terminal-dim);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 8px 14px;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    transition: all var(--transition);
+    position: relative;
+    user-select: none;
+}
+
+.workbench-tabs .wb-tab:hover {
+    color: var(--terminal-text);
+    background: rgba(163, 230, 53, 0.04);
+}
+
+.workbench-tabs .wb-tab.active {
+    color: var(--neon-lime);
+    background: rgba(163, 230, 53, 0.06);
+}
+
+.workbench-tabs .wb-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--neon-lime);
+}
+
+/* Terminal dots before tabs */
+.workbench-tabs::before {
+    content: '● ● ●';
+    font-size: 8px;
+    color: #2a3a1a;
+    letter-spacing: 3px;
+    padding: 8px 10px;
+    display: flex;
+    align-items: center;
+}
+
+.wb-tab-content {
+    display: none;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.wb-tab-content.active {
+    display: flex;
+}
+
+/* --- Workbench Panel --- */
+#workbench-container {
+    padding: 16px 20px;
+    font-family: var(--font-mono);
+    color: var(--terminal-text);
+    line-height: 1.5;
+    background: #060905;
+}
+
+.wb-tab-content::-webkit-scrollbar { width: 4px; height: 4px; }
+.wb-tab-content::-webkit-scrollbar-thumb {
+    background: #1e2a14;
+    border-radius: 0;
+}
+
+/* --- Step Cards --- */
+.wb-step {
+    margin-bottom: 16px;
+    border: 1px solid #1a2414;
+    border-radius: 2px;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.wb-step.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.wb-step.active {
+    border-color: var(--neon-lime);
+    box-shadow: 0 0 12px rgba(163, 230, 53, 0.08);
+}
+
+.wb-step-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    background: #0d1208;
+    border-bottom: 1px solid #1a2414;
+}
+
+.wb-step-number {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--terminal-bg);
+    background: var(--neon-lime);
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+.wb-step-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--neon-lime);
+    letter-spacing: 0.5px;
+}
+
+.wb-step-desc {
+    font-size: 10px;
+    color: var(--terminal-dim);
+    padding: 6px 12px;
+    border-bottom: 1px dashed #131a0b;
+    font-style: italic;
+}
+
+.wb-step-body {
+    padding: 12px;
+}
+
+/* --- Auto-play Progress Bar --- */
+.wb-progress-bar {
+    height: 2px;
+    background: #1a2414;
+    margin-bottom: 16px;
+    border-radius: 1px;
+    overflow: hidden;
+}
+
+.wb-progress-fill {
+    height: 100%;
+    background: var(--neon-lime);
+    width: 0%;
+    transition: width 0.6s ease;
+    box-shadow: 0 0 6px rgba(163, 230, 53, 0.4);
+}
+
+/* --- Matrix Display --- */
+.wb-matrix-container {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 4px 0;
+    vertical-align: middle;
+}
+
+.wb-matrix-label {
+    font-size: 11px;
+    color: var(--accent-amber);
+    font-weight: 600;
+    min-width: 20px;
+    text-align: center;
+}
+
+.wb-matrix {
+    display: inline-flex;
+    flex-direction: column;
+    position: relative;
+    padding: 4px 8px;
+}
+
+/* Matrix bracket decorations */
+.wb-matrix::before,
+.wb-matrix::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    border: 1.5px solid var(--terminal-dim);
+}
+
+.wb-matrix::before {
+    left: 0;
+    border-right: none;
+    border-radius: 3px 0 0 3px;
+}
+
+.wb-matrix::after {
+    right: 0;
+    border-left: none;
+    border-radius: 0 3px 3px 0;
+}
+
+.wb-matrix-row {
+    display: flex;
+    gap: 2px;
+}
+
+.wb-matrix-cell {
+    min-width: 56px;
+    text-align: right;
+    padding: 2px 5px;
+    font-size: 12px;
+    font-weight: 600;
+    transition: color 0.4s ease, background-color 0.4s ease, transform 0.3s ease;
+    border-radius: 1px;
+    line-height: 1.4;
+}
+
+.wb-matrix-cell.positive {
+    color: var(--neon-lime);
+}
+
+.wb-matrix-cell.negative {
+    color: var(--accent-amber);
+}
+
+.wb-matrix-cell.zero {
+    color: #2a3a1a;
+}
+
+.wb-matrix-cell.highlight {
+    background: rgba(163, 230, 53, 0.12);
+    transform: scale(1.05);
+}
+
+/* --- Vector Display --- */
+.wb-vector-container {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    vertical-align: middle;
+}
+
+.wb-vector {
+    display: inline-flex;
+    flex-direction: column;
+    position: relative;
+    padding: 4px 8px;
+}
+
+.wb-vector::before,
+.wb-vector::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    border: 1.5px solid var(--terminal-dim);
+}
+
+.wb-vector::before {
+    left: 0;
+    border-right: none;
+    border-radius: 3px 0 0 3px;
+}
+
+.wb-vector::after {
+    right: 0;
+    border-left: none;
+    border-radius: 0 3px 3px 0;
+}
+
+.wb-vector-cell {
+    text-align: right;
+    padding: 2px 5px;
+    font-size: 12px;
+    font-weight: 600;
+    min-width: 56px;
+    transition: color 0.4s ease;
+    line-height: 1.4;
+}
+
+.wb-vector-cell.positive { color: var(--neon-lime); }
+.wb-vector-cell.negative { color: var(--accent-amber); }
+.wb-vector-cell.zero { color: #2a3a1a; }
+
+/* --- Operation Flow (A × B = C) --- */
+.wb-operation {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin: 8px 0;
+}
+
+.wb-op-symbol {
+    font-size: 16px;
+    color: var(--accent-teal);
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.wb-equals {
+    font-size: 16px;
+    color: var(--accent-teal);
+    font-weight: 700;
+    padding: 0 4px;
+}
+
+/* --- Dot Product / Scalar Display --- */
+.wb-scalar-result {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: rgba(163, 230, 53, 0.06);
+    border: 1px solid #1a2414;
+    border-radius: 2px;
+    margin: 6px 0;
+}
+
+.wb-scalar-label {
+    font-size: 10px;
+    color: var(--terminal-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.wb-scalar-value {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--neon-cyan);
+}
+
+/* --- Row Product Expansion --- */
+.wb-row-expansion {
+    margin: 6px 0 4px 12px;
+    padding-left: 10px;
+    border-left: 2px solid #1a2414;
+}
+
+.wb-row-line {
+    font-size: 11px;
+    color: var(--terminal-dim);
+    margin: 2px 0;
+    transition: color 0.3s;
+}
+
+.wb-row-line.active {
+    color: var(--terminal-text);
+}
+
+.wb-row-line .wb-term {
+    color: var(--neon-lime);
+    font-weight: 600;
+}
+
+.wb-row-line .wb-term.neg {
+    color: var(--accent-amber);
+}
+
+.wb-row-line .wb-row-result {
+    color: var(--neon-cyan);
+    font-weight: 600;
+}
+
+/* --- Verification Checks --- */
+.wb-check {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 12px;
+    margin: 3px 0;
+    border-radius: 2px;
+    font-size: 12px;
+    background: rgba(0, 0, 0, 0.2);
+    transition: background 0.3s;
+}
+
+.wb-check.passed {
+    border-left: 3px solid #10b981;
+}
+
+.wb-check.failed {
+    border-left: 3px solid var(--accent-amber);
+}
+
+.wb-check-icon {
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.wb-check.passed .wb-check-icon { color: #10b981; }
+.wb-check.failed .wb-check-icon { color: var(--accent-amber); }
+
+.wb-check-label {
+    color: var(--terminal-text);
+    flex: 1;
+}
+
+.wb-check-values {
+    color: var(--terminal-dim);
+    font-size: 11px;
+}
+
+.wb-check-values .wb-val {
+    color: var(--neon-cyan);
+    font-weight: 600;
+}
+
+/* --- Christoffel Symbol Table --- */
+.wb-christoffel-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+    margin: 8px 0;
+}
+
+.wb-christoffel-table th {
+    text-align: left;
+    padding: 4px 8px;
+    border-bottom: 1px solid #1a2414;
+    color: var(--terminal-dim);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 9px;
+    letter-spacing: 1px;
+}
+
+.wb-christoffel-table td {
+    padding: 4px 8px;
+    border-bottom: 1px dashed #0d1208;
+    color: var(--terminal-text);
+}
+
+.wb-christoffel-table tr.active-row {
+    background: rgba(163, 230, 53, 0.05);
+}
+
+.wb-christoffel-table .wb-sym-name {
+    color: var(--accent-amber);
+    font-weight: 600;
+}
+
+/* --- ODE Term Display --- */
+.wb-ode-block {
+    margin: 8px 0;
+    padding: 8px 12px;
+    background: rgba(0, 0, 0, 0.15);
+    border-left: 2px solid var(--accent-teal);
+    border-radius: 0 2px 2px 0;
+}
+
+.wb-ode-lhs {
+    color: var(--neon-cyan);
+    font-weight: 600;
+    font-size: 12px;
+    margin-bottom: 4px;
+}
+
+.wb-ode-terms {
+    font-size: 11px;
+    color: var(--terminal-dim);
+    line-height: 1.6;
+}
+
+.wb-ode-term {
+    display: block;
+    padding: 1px 0;
+    transition: color 0.3s;
+}
+
+.wb-ode-term.active {
+    color: var(--terminal-text);
+}
+
+.wb-ode-term .wb-val-inline {
+    color: var(--neon-lime);
+    font-weight: 600;
+}
+
+.wb-ode-term .wb-val-inline.neg {
+    color: var(--accent-amber);
+}
+
+.wb-ode-result {
+    margin-top: 4px;
+    padding-top: 4px;
+    border-top: 1px dashed #1a2414;
+    font-weight: 600;
+    font-size: 12px;
+    color: var(--neon-cyan);
+}
+
+/* --- Norm Bar Display --- */
+.wb-norm-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 8px 0;
+}
+
+.wb-norm-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+}
+
+.wb-norm-bar-label {
+    color: var(--terminal-dim);
+    min-width: 48px;
+}
+
+.wb-norm-bar-track {
+    flex: 1;
+    height: 6px;
+    background: #0d1208;
+    border-radius: 1px;
+    overflow: hidden;
+}
+
+.wb-norm-bar-fill {
+    height: 100%;
+    background: var(--neon-lime);
+    border-radius: 1px;
+    transition: width 0.5s ease;
+}
+
+.wb-norm-bar-value {
+    min-width: 60px;
+    text-align: right;
+    color: var(--neon-cyan);
+    font-weight: 600;
+}
+
+/* --- Derivation Expansion (Levi-Civita formula terms) --- */
+.wb-derivation {
+    margin: 6px 0;
+    padding: 8px 12px;
+    background: rgba(0, 0, 0, 0.12);
+    border-radius: 2px;
+    border-left: 2px solid var(--accent-amber);
+}
+
+.wb-deriv-symbol {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent-amber);
+    margin-bottom: 6px;
+}
+
+.wb-deriv-result {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--neon-cyan);
+    float: right;
+}
+
+.wb-deriv-terms {
+    font-size: 10px;
+    color: var(--terminal-dim);
+    line-height: 1.7;
+    margin-top: 4px;
+}
+
+.wb-deriv-term {
+    display: block;
+    padding: 2px 0;
+    padding-left: 16px;
+    position: relative;
+}
+
+.wb-deriv-term::before {
+    content: '›';
+    position: absolute;
+    left: 4px;
+    color: #2a3a1a;
+}
+
+.wb-formula-ref {
+    font-size: 10px;
+    color: #2a3a1a;
+    padding: 2px 6px;
+    border: 1px dashed #1a2414;
+    display: inline-block;
+    margin-right: 6px;
+}
+
+/* --- Triple Product Display --- */
+.wb-triple-product {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin: 8px 0;
+}
+
+/* --- Matrix Pair Side by Side --- */
+.wb-matrix-pair {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    margin: 8px 0;
+}
+
+.wb-matrix-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.wb-matrix-group-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent-amber);
+}
+
+.wb-det-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+    padding: 3px 8px;
+    background: rgba(14, 116, 144, 0.08);
+    border: 1px solid #1a2414;
+    border-radius: 2px;
+    font-size: 10px;
+    color: var(--terminal-dim);
+}
+
+.wb-det-badge .wb-val {
+    color: var(--neon-cyan);
+    font-weight: 600;
+}
+
+/* --- Empty / Loading State --- */
+.wb-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: #2a3a1a;
+    font-size: 12px;
+}
+
+.wb-empty-icon {
+    font-size: 32px;
+    margin-bottom: 8px;
+    display: block;
+}
+
+/* --- Animations --- */
+@keyframes wb-pulse {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.6; }
+}
+
+@keyframes wb-slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes wb-countUp {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.wb-animate-in {
+    animation: wb-slideIn 0.4s ease forwards;
+}
+
+.wb-value-morph {
+    animation: wb-countUp 0.3s ease forwards;
+}
+
+/* --- Responsive for narrow workbench --- */
+@media (max-width: 600px) {
+    .wb-operation {
+        flex-direction: column;
+        gap: 6px;
+    }
+    .wb-matrix-cell {
+        min-width: 42px;
+        font-size: 11px;
+    }
+}
