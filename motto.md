@@ -8,4 +8,4 @@ Core philosophy:
 1. Emphasize geometric intuition above all else. But do not shy away from the technical details. 
 2. Since this topic uses tensors, covariates and contravarients, we use numpy extensively to demmonstrate the machinery such as levi-civita connection, Christoffel symbols and curvature.
 3. We use 3d interactive plots to visualize manifolds and the machinery. But do not reduce the topic to a toy.
-
+https://differentialgeometry-production.up.railway.app/
