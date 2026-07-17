@@ -64,12 +64,58 @@ class GeometryRequestHandler(http.server.SimpleHTTPRequestHandler):
                 u_n = float(params.get('u_n', [0.5])[0])
                 v_n = float(params.get('v_n', [0.5])[0])
                 tm_data = geometry.compute_charts_workbench(u_n, v_n)
+                if tm_data.get("domain_error"):
+                    trans_point = tm_data["message"]
+                else:
+                    trans_point = f"({tm_data['u_S']:.2f}, {tm_data['v_S']:.2f})"
                 response_data = {
                     "transition": tm_data,
                     "workbench": tm_data.get("workbench"),
                     "stats": {
-                        "trans_point": f"({tm_data['u_S']:.2f}, {tm_data['v_S']:.2f})"
+                        "trans_point": trans_point
                     }
+                }
+
+            elif path == '/api/spherical_transition':
+                theta = float(params.get('theta', [1.0])[0])
+                phi = float(params.get('phi', [0.8])[0])
+                sx, sy, sz = geometry.get_sphere_mesh()
+                st_data = geometry.compute_spherical_transition(theta, phi)
+                response_data = {
+                    "sphere_mesh": {"x": sx, "y": sy, "z": sz},
+                    "spherical": st_data,
+                    "workbench": st_data.get("workbench"),
+                    "stats": {
+                        "sph_coords": f"(θ, φ) = ({theta:.2f}, {phi:.2f})",
+                        "st_coords": f"(u, v) = ({st_data['u']:.2f}, {st_data['v']:.2f})",
+                        "trans_det": f"{st_data['det_J']:.3f}"
+                    }
+                }
+
+            elif path == '/api/mobius':
+                u_a = float(params.get('u', [1.0])[0])
+                w_a = float(params.get('w', [0.4])[0])
+                mx, my, mz, mc = geometry.get_mobius_mesh()
+                mob_data = geometry.compute_mobius_transition(u_a, w_a)
+                if mob_data.get("domain_error"):
+                    stats = {
+                        "chart_a": f"(u_A, w) = ({u_a:.2f}, {w_a:.2f})",
+                        "chart_b": mob_data["message"],
+                        "mob_det": "—"
+                    }
+                else:
+                    det = mob_data["det_J"]
+                    orient = "orientation-preserving" if det > 0 else "orientation-REVERSING"
+                    stats = {
+                        "chart_a": f"(u_A, w) = ({u_a:.2f}, {w_a:.2f})",
+                        "chart_b": f"(u_B, w_B) = ({mob_data['u_B']:.2f}, {mob_data['w_B']:.2f})",
+                        "mob_det": f"{det:+.0f} ({orient})"
+                    }
+                response_data = {
+                    "mobius_mesh": {"x": mx, "y": my, "z": mz, "c": mc},
+                    "mobius": mob_data,
+                    "workbench": mob_data.get("workbench"),
+                    "stats": stats
                 }
 
             elif path == '/api/charts':
@@ -99,25 +145,55 @@ class GeometryRequestHandler(http.server.SimpleHTTPRequestHandler):
                 v = float(params.get('v', [0.5])[0])
                 vx = float(params.get('vx', [0.5])[0])
                 vy = float(params.get('vy', [-0.4])[0])
-                
+
                 ex, ey, ez = geometry.get_ellipsoid_mesh()
                 tangent_data = geometry.compute_tangent_space(u, v, vx, vy)
-                
+
                 response_data = {
                     "ellipsoid_mesh": {"x": ex, "y": ey, "z": ez},
-                    "tangent_data": tangent_data
+                    "tangent_data": tangent_data,
+                    "workbench": tangent_data.get("workbench")
                 }
 
-            elif path == '/api/covector_planes':
-                alpha = float(params.get('alpha', [1.5])[0])
-                vx = float(params.get('vx', [1.0])[0])
-                vy = float(params.get('vy', [1.0])[0])
-                response_data = geometry.compute_covector_planes(alpha, vx, vy)
+            elif path == '/api/covector_ellipsoid':
+                u = float(params.get('u', [0.785])[0])
+                v = float(params.get('v', [0.5])[0])
+                vx = float(params.get('vx', [0.5])[0])
+                vy = float(params.get('vy', [0.6])[0])
 
-            elif path == '/api/differential':
-                vx = float(params.get('vx', [0.8])[0])
-                vy = float(params.get('vy', [0.3])[0])
-                response_data = geometry.compute_differential(vx, vy)
+                ex, ey, ez = geometry.get_ellipsoid_mesh()
+                cov_data = geometry.compute_covector_ellipsoid(u, v, vx, vy)
+
+                response_data = {
+                    "ellipsoid_mesh": {"x": ex, "y": ey, "z": ez},
+                    "covector": cov_data,
+                    "workbench": cov_data.get("workbench"),
+                    "stats": {
+                        "df_comps": f"df = {cov_data['df_coords'][1]:.3f} dv",
+                        "df_value": f"{cov_data['df_val']:.4f}",
+                        "pierced": f"{cov_data['pierced']:.1f} planes"
+                    }
+                }
+
+            elif path == '/api/df_invariance':
+                u = float(params.get('u', [0.785])[0])
+                v = float(params.get('v', [0.5])[0])
+                vx = float(params.get('vx', [0.5])[0])
+                vy = float(params.get('vy', [0.6])[0])
+
+                ex, ey, ez = geometry.get_ellipsoid_mesh()
+                inv_data = geometry.compute_df_invariance(u, v, vx, vy)
+
+                response_data = {
+                    "ellipsoid_mesh": {"x": ex, "y": ey, "z": ez},
+                    "invariance": inv_data,
+                    "workbench": inv_data.get("workbench"),
+                    "stats": {
+                        "v_comps": f"({inv_data['V_chart1'][0]:.2f}, {inv_data['V_chart1'][1]:.2f}) → ({inv_data['V_chart2'][0]:.2f}, {inv_data['V_chart2'][1]:.2f})",
+                        "df_comps": f"(0, {inv_data['df_chart1'][1]:.3f}) → (0, {inv_data['df_chart2'][1]:.3f})",
+                        "pairing": f"{inv_data['pairing1']:.4f} = {inv_data['pairing2']:.4f} ✓"
+                    }
+                }
 
             elif path == '/api/pushforward_map':
                 u = float(params.get('u', [1.5])[0])

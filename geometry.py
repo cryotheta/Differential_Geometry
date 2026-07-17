@@ -1,6 +1,5 @@
 import numpy as np
 from scipy.integrate import solve_ivp
-import sympy as sp
 
 # ---------------------------------------------------------
 # Module 2.1: Charts and Atlases (Simulation First Edition)
@@ -107,18 +106,35 @@ def get_stereographic_grid(chart_type='north', r=1.0, limit=3.0, num=30):
 def compute_charts_workbench(u_N, v_N):
     """
     Computes transition map workbench data for Module 2.1:
-    1. Transition map: North chart -> South chart coordinates
+    1. Transition map: North chart -> South chart coordinates (formula evaluation)
     2. Jacobian of the transition map
-    3. Determinant check (diffeomorphism verification)
+    3. Determinant checks (diffeomorphism verification)
+    The transition map is undefined at the origin — φ_N⁻¹(0,0) is the south
+    pole, which the south chart does not cover — so we report that honestly
+    instead of clamping.
     """
     r_sq = u_N**2 + v_N**2
-    if r_sq < 1e-10:
-        r_sq = 1e-10  # avoid division by zero at origin
-    
+    if r_sq < 1e-6:
+        return {
+            "domain_error": True,
+            "message": "undefined — (0,0) is not in the chart overlap",
+            "workbench": {
+                "steps": [
+                    {
+                        "title": "Transition Map: φ_S ∘ φ_N⁻¹",
+                        "desc": "Domain check at (u_N, v_N) = (0, 0)",
+                        "type": "formula_eval",
+                        "lines": [],
+                        "note": "φ_N⁻¹(0,0) is the south pole S, and the south chart is defined on S² \\ {S}. So (0,0) is NOT in the transition map's domain φ_N(U_N ∩ U_S) = ℝ² \\ {0} — there is nothing to compute. This is the geometric reason the origin is excluded, not a numerical accident."
+                    }
+                ]
+            }
+        }
+
     # Step 1: Transition map computation
     u_S = u_N / r_sq
     v_S = v_N / r_sq
-    
+
     # Step 2: Jacobian of the transition map d(u_S, v_S)/d(u_N, v_N)
     # u_S = u_N / (u_N^2 + v_N^2), v_S = v_N / (u_N^2 + v_N^2)
     # du_S/du_N = (v_N^2 - u_N^2) / (u_N^2 + v_N^2)^2
@@ -130,32 +146,30 @@ def compute_charts_workbench(u_N, v_N):
         [(v_N**2 - u_N**2) / r_sq_sq, -2 * u_N * v_N / r_sq_sq],
         [-2 * u_N * v_N / r_sq_sq, (u_N**2 - v_N**2) / r_sq_sq]
     ])
-    
+
     det_J = np.linalg.det(J)
-    
+
     workbench = {
         "steps": [
             {
                 "title": "Transition Map: φ_S ∘ φ_N⁻¹",
-                "desc": f"North chart (u_N, v_N) = ({u_N:.2f}, {v_N:.2f}) → South chart (u_S, v_S)",
-                "type": "mat_vec_mul",
-                "matrix": [[1.0 / r_sq, 0.0], [0.0, 1.0 / r_sq]],
-                "vector": [u_N, v_N],
-                "result": [float(u_S), float(v_S)],
-                "row_products": [[float(u_N / r_sq), 0.0], [0.0, float(v_N / r_sq)]],
-                "mat_label": f"1/r² (r²={r_sq:.2f})",
-                "vec_label": "(u_N, v_N)",
-                "res_label": "(u_S, v_S)"
+                "desc": f"Evaluate at (u_N, v_N) = ({u_N:.2f}, {v_N:.2f}), where r² = u_N² + v_N² = {r_sq:.4f}",
+                "type": "formula_eval",
+                "lines": [
+                    {"expr": f"u_S = u_N / r² = {u_N:.2f} / {r_sq:.4f}", "value": float(u_S)},
+                    {"expr": f"v_S = v_N / r² = {v_N:.2f} / {r_sq:.4f}", "value": float(v_S)}
+                ],
+                "note": "This map is NOT linear: the factor 1/r² depends on the point being mapped. Its best linear approximation at this point is the Jacobian in the next step — a different matrix at every point."
             },
             {
                 "title": "Jacobian of Transition Map",
-                "desc": "J_ij = ∂(u_S, v_S)/∂(u_N, v_N) — the derivative of the chart change",
+                "desc": "J_ij = ∂(u_S, v_S)/∂(u_N, v_N) — the linearization of the chart change at this point",
                 "type": "matrix",
                 "matrix": J.tolist()
             },
             {
                 "title": "Diffeomorphism Verification",
-                "desc": "det(J) ≠ 0 confirms the transition map is a local diffeomorphism",
+                "desc": "det(J) ≠ 0 confirms a local diffeomorphism; for the inversion, det(J) = −1/r⁴ exactly (negative: the map reverses orientation)",
                 "type": "verification",
                 "checks": [
                     {
@@ -163,17 +177,252 @@ def compute_charts_workbench(u_N, v_N):
                         "lhs": float(det_J),
                         "rhs": 0.0,
                         "passed": bool(abs(det_J) > 1e-10)
+                    },
+                    {
+                        "label": "det(J) = −1/r⁴",
+                        "lhs": float(det_J),
+                        "rhs": float(-1.0 / r_sq_sq),
+                        "passed": bool(np.allclose(det_J, -1.0 / r_sq_sq))
                     }
                 ]
             }
         ]
     }
-    
+
     return {
         "u_S": float(u_S),
         "v_S": float(v_S),
         "jacobian": J.tolist(),
         "det_J": float(det_J),
+        "workbench": workbench
+    }
+
+
+def compute_spherical_transition(theta, phi, h=1e-6):
+    """
+    Transition map between the spherical-coordinates chart and the North
+    stereographic chart on S².
+        ψ⁻¹(θ, φ) = (sinθ cosφ, sinθ sinφ, cosθ),   θ ∈ (0, π), φ ∈ (0, 2π)
+        (φ_N ∘ ψ⁻¹)(θ, φ) = cot(θ/2) · (cosφ, sinφ)
+    Returns the point in both charts, the analytic Jacobian cross-checked
+    against central differences, and workbench steps.
+    """
+    theta = float(np.clip(theta, 0.05, np.pi - 0.05))
+    cot_half = np.cos(theta / 2.0) / np.sin(theta / 2.0)
+    u = cot_half * np.cos(phi)
+    v = cot_half * np.sin(phi)
+
+    # Point on the sphere
+    p = [float(np.sin(theta) * np.cos(phi)),
+         float(np.sin(theta) * np.sin(phi)),
+         float(np.cos(theta))]
+
+    # Analytic Jacobian ∂(u,v)/∂(θ,φ)
+    s_half_sq = np.sin(theta / 2.0) ** 2
+    J = np.array([
+        [-np.cos(phi) / (2 * s_half_sq), -cot_half * np.sin(phi)],
+        [-np.sin(phi) / (2 * s_half_sq),  cot_half * np.cos(phi)]
+    ])
+    det_J = float(np.linalg.det(J))
+    det_analytic = float(-cot_half / (2 * s_half_sq))
+
+    # Numerical cross-check via central differences
+    def trans(th, ph):
+        ch = np.cos(th / 2.0) / np.sin(th / 2.0)
+        return np.array([ch * np.cos(ph), ch * np.sin(ph)])
+    J_num = np.zeros((2, 2))
+    J_num[:, 0] = (trans(theta + h, phi) - trans(theta - h, phi)) / (2 * h)
+    J_num[:, 1] = (trans(theta, phi + h) - trans(theta, phi - h)) / (2 * h)
+    max_err = float(np.max(np.abs(J - J_num)))
+
+    # Equatorial projection plane (z = 0) sized to keep the image point visible
+    L = float(min(8.0, max(3.0, abs(u) + 0.5, abs(v) + 0.5)))
+    plane = {
+        "x": [[-L, L], [-L, L]],
+        "y": [[-L, -L], [L, L]],
+        "z": [[0.0, 0.0], [0.0, 0.0]]
+    }
+
+    workbench = {
+        "steps": [
+            {
+                "title": "Transition Map: φ_N ∘ ψ⁻¹",
+                "desc": f"Evaluate at (θ, φ) = ({theta:.2f}, {phi:.2f}); cot(θ/2) = {cot_half:.4f}",
+                "type": "formula_eval",
+                "lines": [
+                    {"expr": f"u = cot(θ/2) · cos φ = {cot_half:.4f} × {np.cos(phi):.4f}", "value": float(u)},
+                    {"expr": f"v = cot(θ/2) · sin φ = {cot_half:.4f} × {np.sin(phi):.4f}", "value": float(v)}
+                ],
+                "note": "A genuinely nonlinear chart change: the factor cot(θ/2) depends on the point. Linear algebra enters only through the Jacobian below."
+            },
+            {
+                "title": "Jacobian ∂(u,v)/∂(θ,φ)",
+                "desc": "Analytic linearization of the transition map at this point",
+                "type": "matrix",
+                "matrix": J.tolist()
+            },
+            {
+                "title": "Smoothness Verification",
+                "desc": "Analytic Jacobian vs. central differences, and det(J) = −cot(θ/2)/(2sin²(θ/2)) ≠ 0",
+                "type": "verification",
+                "checks": [
+                    {
+                        "label": "max |J_analytic − J_numeric|",
+                        "lhs": max_err,
+                        "rhs": 0.0,
+                        "passed": bool(max_err < 1e-4)
+                    },
+                    {
+                        "label": "det(J) = −cot(θ/2)/(2sin²(θ/2))",
+                        "lhs": det_J,
+                        "rhs": det_analytic,
+                        "passed": bool(np.allclose(det_J, det_analytic))
+                    }
+                ]
+            }
+        ]
+    }
+
+    return {
+        "p_3d": p,
+        "u": float(u),
+        "v": float(v),
+        "jacobian": J.tolist(),
+        "det_J": det_J,
+        "plane": plane,
+        "workbench": workbench
+    }
+
+
+def mobius_embed(u, w):
+    """Standard half-twist embedding of the Möbius band in R³."""
+    return np.array([
+        (1 + (w / 2.0) * np.cos(u / 2.0)) * np.cos(u),
+        (1 + (w / 2.0) * np.cos(u / 2.0)) * np.sin(u),
+        (w / 2.0) * np.sin(u / 2.0)
+    ])
+
+
+def get_mobius_mesh(num_u=140, num_w=17, half_width=0.8):
+    """
+    Möbius band mesh with a surface-color channel marking the two overlap
+    components of the two-chart atlas (u < π vs. u > π in chart A).
+    """
+    u = np.linspace(0, 2 * np.pi, num_u)
+    w = np.linspace(-half_width, half_width, num_w)
+    U, W = np.meshgrid(u, w)
+
+    X = (1 + (W / 2.0) * np.cos(U / 2.0)) * np.cos(U)
+    Y = (1 + (W / 2.0) * np.cos(U / 2.0)) * np.sin(U)
+    Z = (W / 2.0) * np.sin(U / 2.0)
+    C = (U > np.pi).astype(float)
+
+    return X.tolist(), Y.tolist(), Z.tolist(), C.tolist()
+
+
+def compute_mobius_transition(u_A, w_A, half_width=0.8):
+    """
+    Two-chart atlas of the Möbius band M = ([0, 2π] × (−1, 1)) / (u+2π, w) ~ (u, −w).
+        Chart A: u ∈ (0, 2π).   Chart B: u ∈ (−π, π).
+    Overlap component 1, u_A ∈ (0, π):   (u_B, w_B) = (u_A, w_A);        J = I,          det = +1
+    Overlap component 2, u_A ∈ (π, 2π):  (u_B, w_B) = (u_A − 2π, −w_A);  J = diag(1,−1), det = −1
+    The det = −1 component is what makes the band non-orientable.
+    """
+    p_A = mobius_embed(u_A, w_A)
+
+    # The seam u = 0 ~ 2π where the identification (u+2π, w) ~ (u, −w) acts
+    seam = {
+        "x": [1.0 - half_width / 2.0, 1.0 + half_width / 2.0],
+        "y": [0.0, 0.0],
+        "z": [0.0, 0.0]
+    }
+
+    if abs(u_A - np.pi) < 0.02:
+        return {
+            "domain_error": True,
+            "message": "u = π is the edge of chart B — not in the overlap",
+            "p_3d": p_A.tolist(),
+            "seam": seam,
+            "workbench": {
+                "steps": [
+                    {
+                        "title": "Transition Map: Chart A → Chart B",
+                        "desc": f"Domain check at u_A = {u_A:.2f} ≈ π",
+                        "type": "formula_eval",
+                        "lines": [],
+                        "note": "Chart B is defined on u_B ∈ (−π, π), an OPEN interval: the ruling u = π is where chart B's domain ends. This point lies in chart A alone, so there is no transition map to evaluate here."
+                    }
+                ]
+            }
+        }
+
+    if u_A < np.pi:
+        component = "u_A ∈ (0, π) — identity component"
+        u_B, w_B = u_A, w_A
+        J = np.array([[1.0, 0.0], [0.0, 1.0]])
+        line_u = f"u_B = u_A = {u_A:.2f}"
+        line_w = f"w_B = w_A = {w_A:.2f}"
+        orient_note = "det = +1: on this half the two charts agree, orientation preserved."
+    else:
+        component = "u_A ∈ (π, 2π) — flip component"
+        u_B, w_B = u_A - 2 * np.pi, -w_A
+        J = np.array([[1.0, 0.0], [0.0, -1.0]])
+        line_u = f"u_B = u_A − 2π = {u_A:.2f} − 6.28"
+        line_w = f"w_B = −w_A = −({w_A:.2f})"
+        orient_note = "det = −1: crossing the seam flips the width coordinate — orientation reversed."
+
+    p_B = mobius_embed(u_B, w_B)
+    embed_gap = float(np.linalg.norm(p_A - p_B))
+    det_J = float(np.linalg.det(J))
+
+    workbench = {
+        "steps": [
+            {
+                "title": "Transition Map: Chart A → Chart B",
+                "desc": f"Overlap component: {component}",
+                "type": "formula_eval",
+                "lines": [
+                    {"expr": line_u, "value": float(u_B)},
+                    {"expr": line_w, "value": float(w_B)}
+                ],
+                "note": "The overlap U_A ∩ U_B has TWO connected components, and the transition map is a different formula on each — perfectly legal for an atlas."
+            },
+            {
+                "title": "Jacobian of Transition Map",
+                "desc": "Constant on each component (the transition is affine here)",
+                "type": "matrix",
+                "matrix": J.tolist()
+            },
+            {
+                "title": "Orientation Verification",
+                "desc": "Both charts must describe the same point of M; " + orient_note,
+                "type": "verification",
+                "checks": [
+                    {
+                        "label": "‖embed_A(p) − embed_B(p)‖ (same point in ℝ³)",
+                        "lhs": embed_gap,
+                        "rhs": 0.0,
+                        "passed": bool(embed_gap < 1e-9)
+                    },
+                    {
+                        "label": "det(J)",
+                        "lhs": det_J,
+                        "rhs": 1.0 if u_A < np.pi else -1.0,
+                        "passed": bool(np.allclose(det_J, 1.0 if u_A < np.pi else -1.0))
+                    }
+                ]
+            }
+        ]
+    }
+
+    return {
+        "p_3d": p_A.tolist(),
+        "u_B": float(u_B),
+        "w_B": float(w_B),
+        "component": component,
+        "jacobian": J.tolist(),
+        "det_J": det_J,
+        "seam": seam,
         "workbench": workbench
     }
 
@@ -226,119 +475,282 @@ def get_ellipsoid_mesh(a=1.5, b=1.0, c=0.8, num=45):
     Z = c * np.sin(V)
     return X.tolist(), Y.tolist(), Z.tolist()
 
+def _ellipsoid_frame(u, v, a=1.5, b=1.0, c=0.8):
+    """
+    Point and coordinate tangent basis (partial derivatives of the embedding)
+    on the ellipsoid at chart coordinates (u, v).
+    """
+    p = np.array([a * np.cos(v) * np.cos(u),
+                  b * np.cos(v) * np.sin(u),
+                  c * np.sin(v)])
+    e_u = np.array([-a * np.cos(v) * np.sin(u),
+                     b * np.cos(v) * np.cos(u),
+                     0.0])
+    e_v = np.array([-a * np.sin(v) * np.cos(u),
+                    -b * np.sin(v) * np.sin(u),
+                     c * np.cos(v)])
+    return p, e_u, e_v
+
+def _tangent_plane_mesh(p, e_u, e_v, grid_size=0.5, num=10):
+    """Small patch of the tangent plane at p spanned by the coordinate basis."""
+    s_vals = np.linspace(-grid_size, grid_size, num)
+    t_vals = np.linspace(-grid_size, grid_size, num)
+    S, T = np.meshgrid(s_vals, t_vals)
+    plane_x = p[0] + S * e_u[0] + T * e_v[0]
+    plane_y = p[1] + S * e_u[1] + T * e_v[1]
+    plane_z = p[2] + S * e_u[2] + T * e_v[2]
+    return plane_x.tolist(), plane_y.tolist(), plane_z.tolist()
+
+# Single fixed scale for drawing basis arrows: uniform, so the arrows honestly
+# shrink where the coordinate basis degenerates (|∂u| → 0 at the poles).
+BASIS_DRAW_SCALE = 0.5
+
 def compute_tangent_space(u, v, vx, vy, a=1.5, b=1.0, c=0.8):
     """
-    Computes ellipsoid surface point p, tangent basis vectors, 
-    the tangent plane mesh, and evaluates the differential df of height function.
+    Computes ellipsoid surface point p, the TRUE coordinate basis vectors
+    (uniformly scaled for display, never normalized), the tangent plane mesh,
+    and the workbench steps building V_3d as a linear combination.
     """
-    # Point on ellipsoid
-    px = a * np.cos(v) * np.cos(u)
-    py = b * np.cos(v) * np.sin(u)
-    pz = c * np.sin(v)
-    
-    # Coordinate tangent basis vectors (partial derivatives)
-    eu_x = -a * np.cos(v) * np.sin(u)
-    eu_y = b * np.cos(v) * np.cos(u)
-    eu_z = 0.0
-    
-    ev_x = -a * np.sin(v) * np.cos(u)
-    ev_y = -b * np.sin(v) * np.sin(u)
-    ev_z = c * np.cos(v)
-    
-    # Tangent vector components in R^3
-    vx_3d = vx * eu_x + vy * ev_x
-    vy_3d = vx * eu_y + vy * ev_y
-    vz_3d = vx * eu_z + vy * ev_z
-    
-    # Tangent plane representation (a grid around p)
-    grid_size = 0.5
-    s_vals = np.linspace(-grid_size, grid_size, 10)
-    t_vals = np.linspace(-grid_size, grid_size, 10)
-    S, T = np.meshgrid(s_vals, t_vals)
-    
-    plane_x = px + S * eu_x + T * ev_x
-    plane_y = py + S * eu_y + T * ev_y
-    plane_z = pz + S * eu_z + T * ev_z
-    
-    # Covector df (differential of f(x,y,z) = z, height)
-    df_u = 0.0
-    df_v = c * np.cos(v)
-    df_val = df_u * vx + df_v * vy
-    
-    # Normalize basis vectors for visualization
-    def norm_vec(x, y, z):
-        n = np.sqrt(x**2 + y**2 + z**2) + 1e-9
-        return x/n, y/n, z/n
-        
-    eu_nx, eu_ny, eu_nz = norm_vec(eu_x, eu_y, eu_z)
-    ev_nx, ev_ny, ev_nz = norm_vec(ev_x, ev_y, ev_z)
-    
-    len_eu = np.sqrt(eu_x**2 + eu_y**2 + eu_z**2)
-    len_ev = np.sqrt(ev_x**2 + ev_y**2 + ev_z**2)
-    
-    return {
-        "p": [px, py, pz],
-        "eu": [eu_nx * 0.4, eu_ny * 0.4, eu_nz * 0.4],
-        "ev": [ev_nx * 0.4, ev_ny * 0.4, ev_nz * 0.4],
-        "v_3d": [vx_3d, vy_3d, vz_3d],
-        "plane_x": plane_x.tolist(),
-        "plane_y": plane_y.tolist(),
-        "plane_z": plane_z.tolist(),
-        "df_coords": [df_u, df_v],
-        "df_val": float(df_val),
-        "len_eu": float(len_eu),
-        "len_ev": float(len_ev)
+    p, e_u, e_v = _ellipsoid_frame(u, v, a, b, c)
+
+    # Tangent vector in ambient R^3
+    v3d = vx * e_u + vy * e_v
+
+    plane_x, plane_y, plane_z = _tangent_plane_mesh(p, e_u, e_v)
+
+    len_eu = float(np.linalg.norm(e_u))
+    len_ev = float(np.linalg.norm(e_v))
+
+    basis_matrix = np.column_stack([e_u, e_v])
+
+    workbench = {
+        "steps": [
+            {
+                "title": "Coordinate Basis in Ambient ℝ³",
+                "desc": f"Columns are ∂/∂u and ∂/∂v of the embedding at (u, v) = ({u:.2f}, {v:.2f}) — note |∂u| = {len_eu:.3f}, |∂v| = {len_ev:.3f}",
+                "type": "matrix",
+                "matrix": basis_matrix.tolist()
+            },
+            {
+                "title": "Tangent Vector as Linear Combination",
+                "desc": "V₃d = V^u ∂/∂u + V^v ∂/∂v — matrix–vector product with the basis vectors as columns",
+                "type": "mat_vec_mul",
+                "matrix": basis_matrix.tolist(),
+                "vector": [float(vx), float(vy)],
+                "result": v3d.tolist(),
+                "row_products": [[float(e_u[i] * vx), float(e_v[i] * vy)] for i in range(3)],
+                "mat_label": "[∂u | ∂v]",
+                "vec_label": "(V^u, V^v)",
+                "res_label": "V₃d"
+            }
+        ]
     }
 
-def compute_covector_planes(alpha_density, vx, vy):
-    """
-    Simulates a covector as a set of parallel lines (planes in 2D).
-    Covector w = alpha_density * dx.
-    Vector V = vx * dx + vy * dy.
-    The scalar product w(V) = alpha_density * vx.
-    Returns the lines to draw and the scalar product.
-    """
-    # w = alpha dx, so the level sets are vertical lines (x = const)
-    # The spacing between lines is 1/alpha
-    spacing = 1.0 / alpha_density if alpha_density > 0 else 999.0
-    
-    lines_x = []
-    # Draw lines from x=-3 to x=3
-    x_val = -3.0
-    while x_val <= 3.0:
-        lines_x.append(x_val)
-        x_val += spacing
-        
-    scalar_val = alpha_density * vx
-    
     return {
-        "lines_x": lines_x,
-        "vector": [vx, vy],
-        "scalar_val": float(scalar_val)
+        "p": p.tolist(),
+        "eu": (BASIS_DRAW_SCALE * e_u).tolist(),
+        "ev": (BASIS_DRAW_SCALE * e_v).tolist(),
+        "v_3d": v3d.tolist(),
+        "plane_x": plane_x,
+        "plane_y": plane_y,
+        "plane_z": plane_z,
+        "len_eu": len_eu,
+        "len_ev": len_ev,
+        "workbench": workbench
     }
 
-def compute_differential(vx, vy):
+def compute_covector_ellipsoid(u, v, vx, vy, a=1.5, b=1.0, c=0.8,
+                               level_spacing=0.05, patch=0.6):
     """
-    Simulates the differential of a scalar field f(x,y) = x^2 + y^2 at p=(1,1).
-    df = 2x dx + 2y dy. At (1,1), df = 2 dx + 2 dy.
-    df(V) = 2 vx + 2 vy.
-    Returns contour data and the vector.
+    The differential df of the height function f = z on the ellipsoid,
+    drawn as its classic 'stack of planes' picture inside the tangent plane
+    at p: the level sets z = z_p + k·δ intersect the tangent plane in a
+    family of parallel lines, and df(V) counts how many V pierces.
+
+    In the tangent-plane chart q(s,t) = p + s·∂u + t·∂v the height is
+    z(q) = z_p + t·c·cos(v)  (∂u has zero z-component), so the level lines
+    are t = k·δ / (c·cos v): parallel to ∂u, spacing inversely proportional
+    to |df|. Near the pole df → 0 and the lines spread out to infinity.
     """
-    # Create contour grid
-    x = np.linspace(-1, 3, 50)
-    y = np.linspace(-1, 3, 50)
-    X, Y = np.meshgrid(x, y)
-    Z = X**2 + Y**2
-    
-    df_val = 2.0 * vx + 2.0 * vy
-    
+    p, e_u, e_v = _ellipsoid_frame(u, v, a, b, c)
+    v3d = vx * e_u + vy * e_v
+
+    dfdv = c * np.cos(v)                 # df = 0·du + c·cos(v)·dv
+    df_val = float(dfdv * vy)
+
+    plane_x, plane_y, plane_z = _tangent_plane_mesh(p, e_u, e_v, grid_size=patch)
+
+    lines = []
+    if abs(dfdv) > 1e-4:
+        k_max = int(np.floor(patch * abs(dfdv) / level_spacing))
+        for k in range(-k_max, k_max + 1):
+            t_k = k * level_spacing / dfdv
+            q0 = p - patch * e_u + t_k * e_v
+            q1 = p + patch * e_u + t_k * e_v
+            lines.append({
+                "x": [float(q0[0]), float(q1[0])],
+                "y": [float(q0[1]), float(q1[1])],
+                "z": [float(q0[2]), float(q1[2])],
+                "k": k
+            })
+
+    # Numerical directional derivative of f = z along the coordinate ray
+    # gamma(t) = (u + t·vx, v + t·vy): f(gamma(t)) = c·sin(v + t·vy)
+    h = 1e-6
+    ddir = float((c * np.sin(v + h * vy) - c * np.sin(v - h * vy)) / (2 * h))
+
+    workbench = {
+        "steps": [
+            {
+                "title": "Covector Evaluation df(V)",
+                "desc": f"df = (0)·du + (c·cos v)·dv = (0, {dfdv:.4f}) paired with (V^u, V^v)",
+                "type": "dot_product",
+                "left": [0.0, float(dfdv)],
+                "right": [float(vx), float(vy)],
+                "terms": [0.0, df_val],
+                "result": df_val,
+                "left_label": "df",
+                "right_label": "V"
+            },
+            {
+                "title": "df(V) is the Directional Derivative",
+                "desc": "Central-difference check: df(V) = d/dt f(γ(t))|₀ along γ(t) = (u + tV^u, v + tV^v)",
+                "type": "verification",
+                "checks": [
+                    {
+                        "label": "df(V) = (f(γ(h)) − f(γ(−h))) / 2h",
+                        "lhs": df_val,
+                        "rhs": ddir,
+                        "passed": bool(np.allclose(df_val, ddir, atol=1e-6))
+                    }
+                ]
+            }
+        ]
+    }
+
     return {
-        "contour_z": Z.tolist(),
-        "x_grid": x.tolist(),
-        "y_grid": y.tolist(),
-        "p": [1.0, 1.0],
-        "vector": [vx, vy],
-        "df_val": float(df_val)
+        "p": p.tolist(),
+        "v_3d": v3d.tolist(),
+        "plane_x": plane_x,
+        "plane_y": plane_y,
+        "plane_z": plane_z,
+        "lines": lines,
+        "df_coords": [0.0, float(dfdv)],
+        "df_val": df_val,
+        "pierced": float(df_val / level_spacing),
+        "workbench": workbench
+    }
+
+def compute_df_invariance(u, v, vx, vy, a=1.5, b=1.0, c=0.8):
+    """
+    Chart invariance of the pairing df(V) on the ellipsoid.
+    Chart 1: (u, v).  Chart 2: (u', s) with s = sin v (smooth and invertible
+    for v in (−π/2, π/2)).  Jacobian of the chart change: J = diag(1, cos v).
+    Components transform oppositely —
+        vectors (contravariant):  V' = J V        → (V^u, cos v · V^v)
+        covectors (covariant):    df' = df · J⁻¹  → (0, c·cos v) ↦ (0, c)
+    — and the pairing df(V) is identical in both charts.
+    """
+    p, e_u, e_v = _ellipsoid_frame(u, v, a, b, c)
+    v3d = vx * e_u + vy * e_v
+
+    cos_v = np.cos(v)
+    J = np.array([[1.0, 0.0], [0.0, cos_v]])
+
+    V1 = np.array([vx, vy])
+    V2 = J @ V1
+
+    df1 = np.array([0.0, c * cos_v])     # f = c·sin v  in chart (u, v)
+    df2 = np.array([0.0, c])             # f = c·s      in chart (u, s)
+
+    pairing1 = float(df1 @ V1)
+    pairing2 = float(df2 @ V2)
+
+    # Coordinate curve of varying v through p (same curve in both charts —
+    # only its parameterization label changes)
+    v_lo, v_hi = max(v - 0.5, -1.45), min(v + 0.5, 1.45)
+    v_samples = np.linspace(v_lo, v_hi, 40)
+    curve = np.array([_ellipsoid_frame(u, vv, a, b, c)[0] for vv in v_samples])
+
+    workbench = {
+        "steps": [
+            {
+                "title": "Jacobian of the Chart Change",
+                "desc": "J = ∂(u', s)/∂(u, v) for s = sin v — evaluated at this point, cos v = " + f"{cos_v:.4f}",
+                "type": "matrix",
+                "matrix": J.tolist()
+            },
+            {
+                "title": "Vector Components Transform Contravariantly",
+                "desc": "V' = J · V — components go WITH the Jacobian",
+                "type": "mat_vec_mul",
+                "matrix": J.tolist(),
+                "vector": V1.tolist(),
+                "result": V2.tolist(),
+                "row_products": [[float(J[i, 0] * V1[0]), float(J[i, 1] * V1[1])] for i in range(2)],
+                "mat_label": "J",
+                "vec_label": "(V^u, V^v)",
+                "res_label": "(V^u', V^s)"
+            },
+            {
+                "title": "Covector Components Transform Covariantly",
+                "desc": "df' = df · J⁻¹ — components go AGAINST the Jacobian. In the s-chart, df = c·ds has CONSTANT components",
+                "type": "formula_eval",
+                "lines": [
+                    {"expr": "df'_u' = df_u / 1 = 0 / 1", "value": 0.0},
+                    {"expr": f"df'_s = df_v / cos v = {float(df1[1]):.4f} / {cos_v:.4f}", "value": float(df2[1])}
+                ],
+                "note": "Same geometric object df, different component representations. The v-chart components vary with latitude; the s-chart components are constant."
+            },
+            {
+                "title": "Pairing in Chart (u, v)",
+                "desc": "df(V) computed entirely in the first chart",
+                "type": "dot_product",
+                "left": df1.tolist(),
+                "right": V1.tolist(),
+                "terms": [float(df1[0] * V1[0]), float(df1[1] * V1[1])],
+                "result": pairing1,
+                "left_label": "df",
+                "right_label": "V"
+            },
+            {
+                "title": "Pairing in Chart (u, s)",
+                "desc": "df(V) computed entirely in the second chart",
+                "type": "dot_product",
+                "left": df2.tolist(),
+                "right": V2.tolist(),
+                "terms": [float(df2[0] * V2[0]), float(df2[1] * V2[1])],
+                "result": pairing2,
+                "left_label": "df'",
+                "right_label": "V'"
+            },
+            {
+                "title": "Invariance Verification",
+                "desc": "The number df(V) does not depend on the chart — the whole point of tensor calculus",
+                "type": "verification",
+                "checks": [
+                    {
+                        "label": "df(V) chart (u,v) = df(V) chart (u,s)",
+                        "lhs": pairing1,
+                        "rhs": pairing2,
+                        "passed": bool(np.allclose(pairing1, pairing2))
+                    }
+                ]
+            }
+        ]
+    }
+
+    return {
+        "p": p.tolist(),
+        "v_3d": v3d.tolist(),
+        "curve": curve.tolist(),
+        "V_chart1": V1.tolist(),
+        "V_chart2": V2.tolist(),
+        "df_chart1": df1.tolist(),
+        "df_chart2": df2.tolist(),
+        "pairing1": pairing1,
+        "pairing2": pairing2,
+        "workbench": workbench
     }
 
 # ---------------------------------------------------------

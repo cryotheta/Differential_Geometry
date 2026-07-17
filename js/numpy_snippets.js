@@ -2,49 +2,74 @@ const numpySnippets = {
     "m2_1": `import numpy as np
 
 def stereographic_north_to_3d(u, v, R=1.0):
-    """Maps North Pole stereographic coordinates to 3D."""
+    """Inverse of the North chart: phi_N^{-1}(u, v) on S^2."""
     denom = u**2 + v**2 + 1
-    x = 2 * R * u / denom
-    y = 2 * R * v / denom
-    z = R * (u**2 + v**2 - 1) / denom
-    return np.array([x, y, z])
+    return np.array([2*R*u, 2*R*v, R*(u**2 + v**2 - 1)]) / denom
 
 def transition_north_to_south(u_N, v_N):
-    """Transition map from North to South chart."""
-    denom = u_N**2 + v_N**2
-    u_S = u_N / denom
-    v_S = v_N / denom
-    return u_S, v_S
+    """phi_S o phi_N^{-1}: inversion in the unit circle.
+    Domain: R^2 \\ {0} — the origin is phi_N(south pole)."""
+    r_sq = u_N**2 + v_N**2
+    assert r_sq > 0, "origin is not in the chart overlap"
+    return u_N / r_sq, v_N / r_sq
 
-# Compute transition mapping over a grid
-u_N_grid = np.linspace(-3.0, 3.0, 30)
-v_N_grid = np.linspace(-3.0, 3.0, 30)
-U_N, V_N = np.meshgrid(u_N_grid, v_N_grid)
-U_S, V_S = transition_north_to_south(U_N, V_N)`,
+def transition_spherical_to_stereo(theta, phi):
+    """phi_N o psi^{-1}: spherical coords -> stereographic.
+    Genuinely nonlinear: (u,v) = cot(theta/2) * (cos phi, sin phi)."""
+    cot_half = np.cos(theta / 2) / np.sin(theta / 2)
+    return cot_half * np.cos(phi), cot_half * np.sin(phi)
+
+def mobius_transition(u_A, w_A):
+    """Two-chart Mobius atlas: chart A (u in (0,2pi)) -> chart B (u in (-pi,pi)).
+    The overlap has two components; det J = -1 on the flip component
+    is what makes the band non-orientable."""
+    if u_A < np.pi:   # identity component
+        return (u_A, w_A), np.diag([1.0, 1.0])
+    else:             # flip component
+        return (u_A - 2*np.pi, -w_A), np.diag([1.0, -1.0])
+
+# Verify the N->S transition is smooth: its Jacobian never degenerates
+u, v = 0.7, -1.3
+h = 1e-6
+J = np.column_stack([
+    (np.array(transition_north_to_south(u + h, v)) - np.array(transition_north_to_south(u - h, v))) / (2*h),
+    (np.array(transition_north_to_south(u, v + h)) - np.array(transition_north_to_south(u, v - h))) / (2*h),
+])
+assert np.isclose(np.linalg.det(J), -1.0 / (u**2 + v**2)**2)  # det = -1/r^4 != 0`,
 
     "m2_2": `import numpy as np
 
-def ellipsoid_tangent_basis(u, v, a=1.5, b=1.0, c=0.8):
-    """Computes point and tangent basis vectors on Ellipsoid."""
-    # Point p
-    p = np.array([a * np.cos(v) * np.cos(u), 
-                  b * np.cos(v) * np.sin(u), 
-                  c * np.sin(v)])
-    # Coordinate basis tangent vectors (partial derivatives)
-    e_u = np.array([-a * np.cos(v) * np.sin(u), 
-                     b * np.cos(v) * np.cos(u), 
-                     0.0])
-    e_v = np.array([-a * np.sin(v) * np.cos(u), 
-                    -b * np.sin(v) * np.sin(u), 
-                     c * np.cos(v)])
+def ellipsoid_frame(u, v, a=1.5, b=1.0, c=0.8):
+    """Point and coordinate tangent basis on the ellipsoid:
+    the columns of d(embedding) are the basis vectors du, dv of T_pM."""
+    p = np.array([a*np.cos(v)*np.cos(u), b*np.cos(v)*np.sin(u), c*np.sin(v)])
+    e_u = np.array([-a*np.cos(v)*np.sin(u), b*np.cos(v)*np.cos(u), 0.0])
+    e_v = np.array([-a*np.sin(v)*np.cos(u), -b*np.sin(v)*np.sin(u), c*np.cos(v)])
     return p, e_u, e_v
 
-def evaluate_differential_df(v, V_v, c=0.8):
-    """Evaluates the covector df (differential of height function z) on vector V."""
-    # df = 0*du + c*cos(v)*dv
-    df_u = 0.0
-    df_v = c * np.cos(v)
-    return df_u * V_v[0] + df_v * V_v[1]`,
+# |du| = cos(v) * sqrt(a^2 sin^2 u + b^2 cos^2 u) -> 0 at the poles:
+# fixed components (V^u, V^v) do NOT mean a fixed vector.
+_, e_u, _ = ellipsoid_frame(0.78, 1.4)
+assert np.linalg.norm(e_u) < 0.25   # basis collapses near the pole
+
+def df_height(v, c=0.8):
+    """Differential of f = z = c sin(v):  df = 0*du + c cos(v)*dv."""
+    return np.array([0.0, c * np.cos(v)])
+
+def df_invariance_check(u, v, V=(0.5, 0.6), c=0.8):
+    """The pairing df(V) is chart-invariant.
+    Chart 2 is (u, s) with s = sin v, Jacobian J = diag(1, cos v):
+    vectors transform WITH J (contravariant),
+    covectors transform AGAINST it (covariant) — and the pairing agrees."""
+    J = np.diag([1.0, np.cos(v)])
+    V1 = np.array(V)
+    V2 = J @ V1                       # contravariant push
+    df1 = df_height(v, c)             # components in (u, v)
+    df2 = np.array([0.0, c])          # f = c*s  =>  df = c ds  (constant!)
+    assert np.isclose(df1 @ V1, df2 @ V2)
+    return df1 @ V1
+
+df_invariance_check(0.78, 0.5)`,
 
     "m2_3": `import numpy as np
 

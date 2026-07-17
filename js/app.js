@@ -1,422 +1,6 @@
-// Module Data Dictionary (Theory text and Control definitions)
-const moduleData = {
-    "m2_1": {
-        phase: "Phase 2: Smooth Manifolds",
-        title: "Charts and Atlases",
-        hook: "Every map of the Earth is wrong in some way — this module explains why, and why that's actually fine.",
-        sections: [
-            {
-                id: "hausdorff",
-                title: "1. The Hausdorff Condition",
-                theory: `
-                    <div class="def-block">
-                        <div class="def-label">Definition (Topological Space & Hausdorff)</div>
-                        <p>A topological space is a set $X$ with a topology (collection of open sets). It is <strong>Hausdorff</strong> if any two distinct points can be separated by disjoint open sets.</p>
-                    </div>
-                    <p>This prevents pathologic spaces where sequences can converge to multiple limits simultaneously. Consider the "Line with Two Origins" — a standard line except at zero, where there are two distinct origins $0_A$ and $0_B$. Every open interval around $0_A$ must contain points arbitrarily close to $0_B$, making it impossible to separate them.</p>
-                    <span class="viz-ref">▸ Drag points A and B. Try to shrink their radii to separate them. Observe what happens when A and B represent the two origins.</span>
-                `,
-                task: {
-                    mission: "Drag point A to Origin 1 and point B to Origin 2. Try to reduce their open set radii so they no longer overlap.",
-                    guiding_question: "Can you separate the two origins with disjoint open sets? What does this mean for the Hausdorff condition?",
-                    hint: "Notice that any open interval containing Origin 1 must contain some interval $(-\epsilon, 0) \cup (0, \epsilon)$, which overlaps any interval containing Origin 2."
-                },
-                controls: [
-                    { id: "radius_a", label: "Open Set Radius around A", type: "range", min: 0.1, max: 2.0, step: 0.1, val: 1.0 },
-                    { id: "radius_b", label: "Open Set Radius around B", type: "range", min: 0.1, max: 2.0, step: 0.1, val: 1.0 }
-                ],
-                stats: [
-                    { id: "haus_status", label: "Intersection Status", value: "Overlapping" }
-                ],
-                apiPath: "/api/hausdorff"
-            },
-            {
-                id: "locally_euclidean",
-                title: "2. Locally Euclidean",
-                theory: `
-                    <div class="def-block">
-                        <div class="def-label">Definition (Locally Euclidean)</div>
-                        <p>A space is locally Euclidean if every point $p$ has a neighborhood homeomorphic to an open subset of $\\mathbb{R}^n$.</p>
-                    </div>
-                    <p>Globally, a manifold might be curved and complex, but if you zoom in close enough to any point, it looks exactly like flat space. A sphere $S^2$ is locally Euclidean because any small cap on the sphere resembles a flat disk in $\\mathbb{R}^2$.</p>
-                    <span class="viz-ref">▸ Zoom into the spherical cap. Watch how the curved surface converges to the flat tangent plane.</span>
-                `,
-                task: {
-                    mission: "Decrease the neighborhood radius $r$ until the curvature of the spherical cap becomes indistinguishable from the flat tangent plane.",
-                    guiding_question: "As the radius shrinks, what happens to the maximum deviation between the sphere and the plane?",
-                    hint: "Look at the 'Max Deviation' metric. Notice how quickly it drops as $r$ gets smaller."
-                },
-                controls: [
-                    { id: "cap_radius", label: "Neighborhood Radius $r$", type: "range", min: 0.05, max: 1.57, step: 0.05, val: 1.0 }
-                ],
-                stats: [
-                    { id: "max_deviation", label: "Max Deviation", value: "Loading..." }
-                ],
-                apiPath: "/api/locally_euclidean"
-            },
-            {
-                id: "charts",
-                title: "3. Charts and Coordinate Systems",
-                theory: `
-                    <div class="def-block">
-                        <div class="def-label">Definition (Chart)</div>
-                        <p>A <strong>chart</strong> on $M$ is a pair $(U, \\phi)$ where $U \\subseteq M$ is open and $\\phi: U \\to \\mathbb{R}^n$ is a homeomorphism onto an open subset of $\\mathbb{R}^n$. The map $\\phi$ assigns coordinates to each point in $U$.</p>
-                    </div>
-                    <p><strong>Example — Stereographic projection from the North Pole.</strong> Define $\\phi_N: S^2 \\setminus \\{N\\} \\to \\mathbb{R}^2$ by projecting each point $(x, y, z)$ from the north pole $N = (0,0,1)$ onto the equatorial plane:</p>
-                    $$\\phi_N(x, y, z) = \\left(\\frac{x}{1 - z},\\; \\frac{y}{1 - z}\\right)$$
-                    <p>This covers every point of the sphere <em>except</em> the north pole itself.</p>
-                    <div class="thm-block">
-                        <div class="thm-label">Theorem</div>
-                        <p>The sphere $S^2$ cannot be covered by a single chart. At minimum, an <strong>atlas</strong> of two charts is needed.</p>
-                    </div>
-                `,
-                task: {
-                    mission: "Switch between North and South stereographic charts. Increase the boundary limit to its maximum. Identify where the grid degenerates.",
-                    guiding_question: "Can a single chart cover the entire sphere? Why does the grid diverge at the projection pole?",
-                    hint: "Toggle between North and South charts at the same limit. Notice which regions each chart covers well, and which point it fails to reach."
-                },
-                controls: [
-                    { id: "chart_type", label: "Select Coordinate Chart", type: "select", options: [ {val: "north", label: "North Stereographic Projection"}, {val: "south", label: "South Stereographic Projection"} ] },
-                    { id: "limit", label: "Chart Boundary Limit ($u, v$ range)", type: "range", min: 1.0, max: 5.0, step: 0.2, val: 3.0 }
-                ],
-                stats: [
-                    { id: "coord_desc", label: "Chart Type", value: "North Pole" },
-                    { id: "overlap_status", label: "Coordinate Area", value: "Stereographic Plane" }
-                ],
-                apiPath: "/api/charts"
-            },
-            {
-                id: "transition_maps",
-                title: "4. Transition Maps",
-                theory: `
-                    <p>Where two charts $(U_\\alpha, \\phi_\\alpha)$ and $(U_\\beta, \\phi_\\beta)$ overlap, we can convert between their coordinates using the <strong>transition map</strong>:</p>
-                    $$\\phi_\\beta \\circ \\phi_\\alpha^{-1}: \\phi_\\alpha(U_\\alpha \\cap U_\\beta) \\to \\phi_\\beta(U_\\alpha \\cap U_\\beta)$$
-                    <p>For $S^2$, the North-to-South transition map is an inversion in the plane:</p>
-                    $$\\phi_S \\circ \\phi_N^{-1}(u_N, v_N) = \\left(\\frac{u_N}{u_N^2 + v_N^2},\\; \\frac{v_N}{u_N^2 + v_N^2}\\right)$$
-                    <div class="def-block">
-                        <div class="def-label">Definition (Diffeomorphism)</div>
-                        <p>A <strong>diffeomorphism</strong> is a bijective smooth map whose inverse is also smooth. A manifold is called <strong>smooth</strong> when all its transition maps are diffeomorphisms.</p>
-                    </div>
-                    <span class="viz-ref">▸ Open the Algebra Workbench tab to see this transition map computed step-by-step.</span>
-                `,
-                task: {
-                    mission: "Adjust the u and v coordinates on the North chart. Observe the mapped point on the South chart.",
-                    guiding_question: "What happens to points that are inside the unit circle on the North chart when mapped to the South chart?",
-                    hint: "The unit circle represents the equator. Notice that the transition map is a geometric inversion."
-                },
-                controls: [
-                    { id: "u_n", label: "North coordinate $u_N$", type: "range", min: -2.0, max: 2.0, step: 0.1, val: 0.5 },
-                    { id: "v_n", label: "North coordinate $v_N$", type: "range", min: -2.0, max: 2.0, step: 0.1, val: 0.5 }
-                ],
-                stats: [
-                    { id: "trans_point", label: "Mapped South Point", value: "Loading..." }
-                ],
-                apiPath: "/api/transition_maps"
-            }
-        ]
-    },
-    "m2_2": {
-        phase: "Phase 2: Smooth Manifolds",
-        title: "Tangent and Cotangent Spaces",
-        hook: "How do we define vectors without an ambient space to point them in?",
-        sections: [
-            {
-                id: "derivations",
-                title: "Vectors as Derivations & The Lie Bracket",
-                theory: `
-                    <p>On an abstract manifold without an ambient space, a vector *is* a derivation. It is an operator that takes a smooth function and returns its directional derivative.</p>
-                    <p>To prove vectors are operators, we show they don't commute. The <strong>Lie Bracket</strong> $[X,Y] = XY - YX$ forms a new vector field. It measures the failure of the flows of $X$ and $Y$ to form closed rectangles.</p>
-                    <p>This simulation shows the commutator gap: flowing along $X$ then $Y$ versus $Y$ then $X$.</p>
-                `,
-                task: {
-                    mission: "Increase the step size $\\epsilon$ and observe the gap between the two flow paths.",
-                    guiding_question: "Why does the gap scale roughly quadratically with $\\epsilon$?",
-                    hint: "The Taylor expansion of the commutator reveals that the leading error term is $\\epsilon^2 [X,Y]$."
-                },
-                controls: [
-                    { id: "epsilon", label: "Flow Step Size $\\epsilon$", type: "range", min: 0.1, max: 1.5, step: 0.1, val: 0.8 }
-                ],
-                stats: [
-                    { id: "gap_dist", label: "Commutator Gap Distance", value: "Loading..." }
-                ],
-                apiPath: "/api/lie_bracket"
-            },
-            {
-                id: "tangent_basis",
-                title: "The Tangent Space & Holonomic Basis",
-                theory: `
-                    <p>The coordinate partial derivatives $\\partial_u, \\partial_v$ form a basis for the tangent space $T_pM$. However, these are <strong>non-orthonormal</strong> and vary wildly from point to point.</p>
-                    <p>Students often confuse a vector with its components. If you keep components $(V^u, V^v)$ fixed but move the point $p$, the physical arrow stretches and shears dramatically as the local coordinate grid warps.</p>
-                    <p>This visualizes why we desperately need a metric tensor to measure true lengths.</p>
-                `,
-                task: {
-                    mission: "Keep the vector components $V^u, V^v$ fixed and drag the point $(u,v)$ around the ellipsoid.",
-                    guiding_question: "What happens to the physical length of the vector as it approaches the poles?",
-                    hint: "Notice how the coordinate grid lines bunch up near the poles, causing the basis vectors to shrink."
-                },
-                controls: [
-                    { id: "u", label: "Coordinate $u$ (Longitude angle)", type: "range", min: 0.0, max: 6.28, step: 0.1, val: 0.78 },
-                    { id: "v", label: "Coordinate $v$ (Latitude angle)", type: "range", min: -1.4, max: 1.4, step: 0.05, val: 0.5 },
-                    { id: "vx", label: "Fixed Component $V^u$", type: "range", min: -1.0, max: 1.0, step: 0.1, val: 0.5 },
-                    { id: "vy", label: "Fixed Component $V^v$", type: "range", min: -1.0, max: 1.0, step: 0.1, val: -0.4 }
-                ],
-                stats: [
-                    { id: "p_coords", label: "Point p (x, y, z)", value: "Loading..." },
-                    { id: "basis_lengths", label: "Length |∂u|, |∂v|", value: "Loading..." }
-                ],
-                apiPath: "/api/tangent_space"
-            },
-            {
-                id: "covectors",
-                title: "The Cotangent Space $T_p^*M$",
-                theory: `
-                    <p>The <strong>cotangent space</strong> $T_p^*M$ is the dual space to $T_pM$. Elements are 1-forms (covectors), which are linear functionals (measuring instruments) mapping vectors to scalars.</p>
-                    <p>Stop thinking of covectors as arrows! Visually, a covector is exactly a stack of parallel hyperplanes. When a vector $V$ is evaluated by a covector $\\omega$, the output $\\omega(V)$ is precisely the number of planes pierced by $V$.</p>
-                `,
-                task: {
-                    mission: "Adjust the covector density $\\alpha$ and the vector length $V^x$. Watch how the scalar product changes.",
-                    guiding_question: "How does the number of pierced planes change if you double the vector length vs doubling the covector density?",
-                    hint: "Both operations double the scalar output, illustrating bilinearity."
-                },
-                controls: [
-                    { id: "alpha", label: "Covector Density $\\alpha$", type: "range", min: 0.5, max: 3.0, step: 0.5, val: 1.5 },
-                    { id: "vx", label: "Vector Component $V^x$", type: "range", min: -2.0, max: 2.0, step: 0.5, val: 1.0 },
-                    { id: "vy", label: "Vector Component $V^y$", type: "range", min: -2.0, max: 2.0, step: 0.5, val: 1.0 }
-                ],
-                stats: [
-                    { id: "pierced_planes", label: "Planes Pierced ω(V)", value: "Loading..." }
-                ],
-                apiPath: "/api/covector_planes"
-            },
-            {
-                id: "differential",
-                title: "The Differential $df$",
-                theory: `
-                    <p>The differential of a function $f: M \\to \\mathbb{R}$ is a covector $df \\in T_p^*M$.</p>
-                    <p>Visualized via contour lines (level sets), $df$ forms covector planes perfectly aligned with the contours. Acting on a vector $V$, $df(V)$ computes the exact rate at which the vector crosses the contours.</p>
-                    <span class="viz-ref">▸ Open the Algebra Workbench tab to see $df(V) = \\sum \\frac{\\partial f}{\\partial x^i} V^i$ computed.</span>
-                `,
-                task: {
-                    mission: "Rotate the vector $V$ until it is perfectly tangent to a contour line.",
-                    guiding_question: "What is the value of $df(V)$ when $V$ is tangent to the contour?",
-                    hint: "If it doesn't cross any contour planes, the rate of change is zero."
-                },
-                controls: [
-                    { id: "vx", label: "Vector $V^x$", type: "range", min: -1.0, max: 1.0, step: 0.1, val: 0.8 },
-                    { id: "vy", label: "Vector $V^y$", type: "range", min: -1.0, max: 1.0, step: 0.1, val: 0.3 }
-                ],
-                stats: [
-                    { id: "df_val", label: "Rate of Change df(V)", value: "Loading..." }
-                ],
-                apiPath: "/api/differential"
-            }
-        ]
-    },
-    "m2_3": {
-        phase: "Phase 2: Smooth Manifolds",
-        title: "Pushforwards and Pullbacks",
-        hook: "How do we transport geometry between entirely different manifold spaces?",
-        sections: [
-            {
-                id: "pushforward",
-                title: "The Pushforward Map $F_*$",
-                theory: `
-                    <p>Let $F: M \\to N$ be a smooth map between manifolds. The <strong>pushforward</strong> (or differential) maps tangent vectors from $M$ to $N$: $F_*: T_pM \\to T_{F(p)}N$.</p>
-                    <p>In local coordinates, this is simply multiplication by the Jacobian matrix $J^i_j = \\frac{\\partial F^i}{\\partial x^j}$. We map a 2D vector in the flat parameter chart to a 3D tangent vector on the Torus.</p>
-                `,
-                task: {
-                    mission: "Adjust $du$ and $dv$ in the 2D chart. Observe how the pushed-forward vector stretches and rotates on the 3D Torus.",
-                    guiding_question: "Is the pushforward a linear map at a fixed point $p$?",
-                    hint: "Yes! At a fixed point, the Jacobian is a constant matrix, making the pushforward a linear transformation."
-                },
-                controls: [
-                    { id: "u", label: "Torus major angle $u$", type: "range", min: 0.0, max: 6.28, step: 0.1, val: 1.5 },
-                    { id: "v", label: "Torus minor angle $v$", type: "range", min: 0.0, max: 6.28, step: 0.1, val: 0.8 },
-                    { id: "du", label: "2D Vector $du$", type: "range", min: -1.0, max: 1.0, step: 0.1, val: 0.6 },
-                    { id: "dv", label: "2D Vector $dv$", type: "range", min: -1.0, max: 1.0, step: 0.1, val: 0.4 }
-                ],
-                stats: [
-                    { id: "pf_vector", label: "Pushforward V_3d", value: "Loading..." }
-                ],
-                apiPath: "/api/pushforward_map"
-            },
-            {
-                id: "pullback",
-                title: "The Pullback $F^*$ of a 1-form",
-                theory: `
-                    <p>While vectors push forward, covectors (1-forms) <strong>pull back</strong>. For a 1-form $\\omega$ on $N$, the pullback $F^* \\omega$ is a 1-form on $M$.</p>
-                    <p>Since covectors are level sets, pulling back a covector means pulling back its level set planes from the 3D Torus onto the 2D flat parameter space.</p>
-                `,
-                task: {
-                    mission: "Observe how the 3D planes (1-form) intersect the Torus, and how those intersections pull back to form 2D contour lines.",
-                    guiding_question: "Why do we pull covectors back instead of pushing them forward?",
-                    hint: "Because a covector eats vectors. If you have a vector in M, you can push it to N, then feed it to the covector in N. This effectively creates a new covector waiting in M!"
-                },
-                controls: [
-                    { id: "u", label: "Torus major angle $u$", type: "range", min: 0.0, max: 6.28, step: 0.1, val: 1.5 },
-                    { id: "v", label: "Torus minor angle $v$", type: "range", min: 0.0, max: 6.28, step: 0.1, val: 0.8 }
-                ],
-                stats: [
-                    { id: "pb_covector", label: "Pullback Covector F*ω", value: "Loading..." }
-                ],
-                apiPath: "/api/pullback_map"
-            },
-            {
-                id: "duality",
-                title: "The Fundamental Duality",
-                theory: `
-                    <p>The definitions of pushforward and pullback are permanently locked together by the fundamental duality:</p>
-                    $$(F^* \\omega)(V) = \\omega(F_* V)$$
-                    <p>Evaluating the pulled-back covector on the original vector is identically equal to pushing the vector forward and evaluating it against the original covector.</p>
-                    <span class="viz-ref">▸ Open the Algebra Workbench to see the side-by-side matrices proving this duality.</span>
-                `,
-                task: {
-                    mission: "Open the Algebra Workbench and compare the final scalar outputs of both computation branches.",
-                    guiding_question: "How does the Jacobian transpose $J^T$ factor into the pullback?",
-                    hint: "While pushforward multiplies the vector by $J$, the pullback multiplies the covector by $J^T$."
-                },
-                controls: [
-                    { id: "u", label: "Torus major angle $u$", type: "range", min: 0.0, max: 6.28, step: 0.1, val: 1.5 },
-                    { id: "v", label: "Torus minor angle $v$", type: "range", min: 0.0, max: 6.28, step: 0.1, val: 0.8 },
-                    { id: "du", label: "2D Vector $du$", type: "range", min: -1.0, max: 1.0, step: 0.1, val: 0.6 },
-                    { id: "dv", label: "2D Vector $dv$", type: "range", min: -1.0, max: 1.0, step: 0.1, val: 0.4 }
-                ],
-                stats: [
-                    { id: "cov_eval", label: "Dual Evaluation", value: "Loading..." }
-                ],
-                apiPath: "/api/pushforward" // Keep existing for the duality workbench
-            }
-        ]
-    },
-    "m2_4": {
-        phase: "Phase 2: Smooth Manifolds",
-        title: "Tensor Algebra & Invariance",
-        theory: `
-            <h4>Tensor Coordinate Transformations</h4>
-            <p>A tensor of type $(r,s)$ is a multilinear map taking $r$ covectors and $s$ vectors to $\\mathbb{R}$. Under a coordinate change $x \\to x'$, the components of a $(0,2)$-tensor $T_{ij}$ transform according to the rule:</p>
-            $$T'_{ij} = \\sum_{k,l} \\frac{\\partial x^k}{\\partial x'^i} \\frac{\\partial x^l}{\\partial x'^j} T_{kl}$$
-            <p>This animation demonstrates that while the component representation $T_{ij}$ of a tensor changes depending on the rotation $\\alpha$ of our coordinate basis, the underlying geometric object (visualized as an ellipse $T_{ij} x^i x^j = 1$) remains completely invariant in space.</p>
-            <p>Crucially, tensor contraction operations like the <strong>Trace</strong> and <strong>Determinant</strong> are invariant under change of coordinates:</p>
-            $$\\text{Tr}(T) = \\text{Tr}(T'), \\quad \\det(T) = \\det(T')$$
-        `,
-        controls: [
-            { id: "alpha", label: "Coordinate Rotation Angle $\\alpha$", type: "range", min: 0.0, max: 3.14, step: 0.05, val: 0.5 },
-            { id: "theta", label: "Ellipse Orientation Angle $\\theta$", type: "range", min: 0.0, max: 3.14, step: 0.05, val: 0.8 },
-            { id: "a", label: "Semi-major axis $a$", type: "range", min: 1.0, max: 3.0, step: 0.1, val: 2.0 },
-            { id: "b", label: "Semi-minor axis $b$", type: "range", min: 0.3, max: 1.0, step: 0.1, val: 0.6 }
-        ],
-        stats: [
-            { id: "t_comp", label: "T_ij Components", value: "Loading..." },
-            { id: "t_prime_comp", label: "T'_ij Components", value: "Loading..." },
-            { id: "invariants", label: "Det(T) | Det(T')", value: "Loading..." }
-        ]
-    },
-    "m3_1": {
-        phase: "Phase 3: Riemannian Geometry",
-        title: "The Riemannian Metric",
-        theory: `
-            <h4>The Riemannian Metric Tensor $g_{ij}$</h4>
-            <p>A <strong>Riemannian metric</strong> $g$ on a manifold $M$ assigns to each tangent space $T_pM$ an inner product $g_p(u, v)$ that varies smoothly with $p$. In local coordinates, it is represented as a symmetric, positive-definite $(0,2)$-tensor field $g_{ij}$:</p>
-            $$g = \\sum_{i,j} g_{ij} dx^i \\otimes dx^j$$
-            <p>The metric enables us to compute length, angle, and volume on curved manifolds. The length of a curve $\\gamma(t)$ is given by:</p>
-            $$L(\\gamma) = \\int \\sqrt{ g_{ij}(\\gamma(t)) \\dot{\\gamma}^i(t) \\dot{\\gamma}^j(t) } \\, dt$$
-            <p>We visualize the metric using <strong>Tissot's indicatrices</strong>. These are unit circles in the tangent space ($g_{ij} v^i v^j = \\epsilon^2$). When projected to coordinate space, they deform into ellipses, illustrating the scaling and shearing of space at each point. In Information Geometry, the Fisher Information Matrix (FIM) functions as a Riemannian metric tensor.</p>
-        `,
-        controls: [
-            { id: "manifold", label: "Select Manifold", type: "select", options: [ {val: "sphere", label: "Sphere (S2)"}, {val: "torus", label: "Torus (T2)"}, {val: "poincare", label: "Poincare Half-Plane (Hyperbolic)"} ] },
-            { id: "u", label: "Coordinate $u$ (latitude/x)", type: "range", min: 0.2, max: 2.9, step: 0.1, val: 1.0 },
-            { id: "v", label: "Coordinate $v$ (longitude/y)", type: "range", min: 0.2, max: 5.0, step: 0.1, val: 1.5 }
-        ],
-        stats: [
-            { id: "metric_g", label: "Metric tensor g_ij", value: "Loading..." },
-            { id: "metric_det", label: "Det(g)", value: "Loading..." }
-        ]
-    },
-    "m3_2": {
-        phase: "Phase 3: Riemannian Geometry",
-        title: "Affine Connections & Parallel Transport",
-        theory: `
-            <h4>Affine Connections & Parallel Transport</h4>
-            <p>On a curved manifold, tangent spaces at different points are different vector spaces. To take derivatives of vector fields or compare vectors at $p$ and $q$, we need a connection.</p>
-            <p>An <strong>Affine Connection</strong> $\\nabla$ defines a rule for <strong>parallel transport</strong>. A vector field $V$ along a curve $\\gamma(t)$ is parallel transported if its covariant derivative along the curve vanishes:</p>
-            $$\\nabla_{\\dot{\\gamma}} V = 0$$
-            <p>In coordinates, this is a system of linear ODEs involving the <strong>Christoffel symbols</strong> $\\Gamma_{ij}^k$:</p>
-            $$\\frac{dV^k}{dt} + \\sum_{i,j} \\Gamma_{ij}^k V^i \\frac{d\\gamma^j}{dt} = 0$$
-            <p>Transporting a vector around a closed loop does not return it to its original direction. The angle difference is called the <strong>holonomy</strong>, which is directly proportional to the curvature of the enclosed region.</p>
-        `,
-        controls: [
-            { id: "path_type", label: "Select Transport Path", type: "select", options: [ {val: "triangle", label: "Geodesic Triangle (Large area)"}, {val: "circle", label: "Latitude Circle (constant theta = pi/4)"} ] }
-        ],
-        stats: [
-            { id: "holonomy_angle", label: "Holonomy Angle Error", value: "Loading..." }
-        ]
-    },
-    "m3_3": {
-        phase: "Phase 3: Riemannian Geometry",
-        title: "The Levi-Civita Connection",
-        theory: `
-            <h4>The Levi-Civita Connection</h4>
-            <p>The <strong>Fundamental Theorem of Riemannian Geometry</strong> states that on any Riemannian manifold, there exists a unique affine connection $\\nabla$ that satisfies two properties:</p>
-            <p>1. <strong>Metric Compatibility:</strong> Parallel transport preserves inner products (lengths and angles): $\\nabla g = 0$.</p>
-            <p>2. <strong>Symmetry (Torsion-free):</strong> The space has no intrinsic twisting: $\\nabla_X Y - \\nabla_Y X = [X, Y]$.</p>
-            <p>This unique connection is called the <strong>Levi-Civita Connection</strong>. Its Christoffel symbols $\\Gamma_{ij}^k$ are determined entirely by the metric tensor $g_{ij}$ and its partial derivatives:</p>
-            $$\\Gamma_{ij}^k = \\frac{1}{2} \\sum_{l} g^{kl} \\left( \\frac{\\partial g_{jl}}{\\partial x^i} + \\frac{\\partial g_{il}}{\\partial x^j} - \\frac{\\partial g_{ij}}{\\partial x^l} \\right)$$
-            <p>Where $g^{kl}$ represents the components of the inverse metric matrix.</p>
-        `,
-        controls: [
-            { id: "manifold", label: "Select Manifold", type: "select", options: [ {val: "sphere", label: "Sphere (S2)"}, {val: "torus", label: "Torus (T2)"} ] },
-            { id: "u", label: "Coordinate $u$", type: "range", min: 0.3, max: 2.8, step: 0.1, val: 1.0 },
-            { id: "v", label: "Coordinate $v$", type: "range", min: 0.0, max: 6.2, step: 0.1, val: 1.5 }
-        ],
-        stats: [
-            { id: "gamma_symbols", label: "Selected Christoffels", value: "Loading..." }
-        ]
-    },
-    "m3_4": {
-        phase: "Phase 3: Riemannian Geometry",
-        title: "Geodesics",
-        theory: `
-            <h4>Geodesics on Curved Surfaces</h4>
-            <p>A <strong>geodesic</strong> generalises the concept of a straight line to curved spaces. It is defined as a curve $\\gamma(t)$ that parallel transports its own velocity vector: $\\nabla_{\\dot{\\gamma}} \\dot{\\gamma} = 0$.</p>
-            <p>In coordinates, this yields the non-linear second-order ODE system (the <strong>Geodesic Equation</strong>):</p>
-            $$\\frac{d^2 x^k}{dt^2} + \\sum_{i,j} \\Gamma_{ij}^k \\frac{dx^i}{dt} \\frac{dx^j}{dt} = 0$$
-            <p>This simulator solves these differential equations in real-time on the backend using <code>scipy.integrate.solve_ivp</code> (using an RK45 adaptive solver) and plots the resulting shortest/straightest path on the 3D surface.</p>
-        `,
-        controls: [
-            { id: "manifold", label: "Select Manifold", type: "select", options: [ {val: "sphere", label: "Sphere (S2)"}, {val: "torus", label: "Torus (T2)"} ] },
-            { id: "start_u", label: "Start Coordinate $u_0$", type: "range", min: 0.2, max: 2.8, step: 0.1, val: 1.2 },
-            { id: "start_v", label: "Start Coordinate $v_0$", type: "range", min: 0.0, max: 6.2, step: 0.1, val: 0.1 },
-            { id: "vel_u", label: "Initial Velocity $\\dot{u}_0$", type: "range", min: -1.5, max: 1.5, step: 0.1, val: 0.0 },
-            { id: "vel_v", label: "Initial Velocity $\\dot{v}_0$", type: "range", min: -3.0, max: 3.0, step: 0.2, val: 1.6 }
-        ],
-        stats: [
-            { id: "geo_status", label: "ODE Integrator", value: "RK45 Converged" },
-            { id: "geo_length", label: "Integration Steps", value: "120 points" }
-        ]
-    },
-    "m3_5": {
-        phase: "Phase 3: Riemannian Geometry",
-        title: "Information Curvature & Statistical Manifolds",
-        theory: `
-            <h4>Statistical Manifolds & Information Curvature</h4>
-            <p>In <strong>Information Geometry</strong>, we treat a family of probability distributions as a smooth manifold. The coordinates represent parameters (e.g., mean $\\mu$ and standard deviation $\\sigma$). The metric is the <strong>Fisher Information Matrix</strong>:</p>
-            $$g_{ij}(\\theta) = \\mathbb{E}_{X \\sim p_\\theta} \\left[ \\frac{\\partial \\log p(X;\\theta)}{\\partial \\theta^i} \\frac{\\partial \\log p(X;\\theta)}{\\partial \\theta^j} \\right]$$
-            <p>For the univariate Normal distribution family, the metric is:</p>
-            $$ds^2 = \\frac{d\\mu^2}{\\sigma^2} + 2\\frac{d\\sigma^2}{\\sigma^2}$$
-            <p>Under coordinate rescaling, this is isomorphic to the Poincaré Half-Plane, which possesses a constant negative curvature of $R = -1$. Geodesics in this space represent the optimal paths of information projection, indicating the shortest path of continuous distribution morphing.</p>
-        `,
-        controls: [
-            { id: "mu1", label: "Start Mean $\\mu_1$", type: "range", min: -3.0, max: 3.0, step: 0.2, val: -1.5 },
-            { id: "sigma1", label: "Start Std Dev $\\sigma_1$", type: "range", min: 0.4, max: 3.0, step: 0.1, val: 0.6 },
-            { id: "mu2", label: "End Mean $\\mu_2$", type: "range", min: -3.0, max: 3.0, step: 0.2, val: 1.5 },
-            { id: "sigma2", label: "End Std Dev $\\sigma_2$", type: "range", min: 0.4, max: 3.0, step: 0.1, val: 1.8 }
-        ],
-        stats: [
-            { id: "scal_curv", label: "Scalar Curvature R", value: "-1.0 (Constant)" },
-            { id: "dist_length", label: "Fisher Distance", value: "Loading..." }
-        ]
-    }
-};
+// Module data (lecture notes, tasks, controls, stats) lives in js/content.js,
+// loaded before this file. This file is UI logic only.
+
 
 // Global variables for active state
 let activeModule = "m2_1";
@@ -480,6 +64,22 @@ function setupWorkbenchTabs() {
     });
 }
 
+// Render KaTeX inside an element. Retries briefly in case the deferred
+// KaTeX CDN script has not finished loading when content is injected.
+function renderMath(el, attempt = 0) {
+    if (!el) return;
+    if (window.renderMathInElement) {
+        window.renderMathInElement(el, {
+            delimiters: [
+                {left: "$$", right: "$$", display: true},
+                {left: "$", right: "$", display: false}
+            ]
+        });
+    } else if (attempt < 10) {
+        setTimeout(() => renderMath(el, attempt + 1), 300);
+    }
+}
+
 // Toggle hint visibility
 function toggleHint() {
     const hint = document.getElementById("task-hint");
@@ -539,7 +139,7 @@ function loadModule(modId) {
             if (activeEl) activeEl.classList.add('active');
             
             // Scroll right pane to top if needed
-            const rightPane = document.querySelector('.right-pane');
+            const rightPane = document.querySelector('.pane-right');
             if (rightPane) rightPane.scrollTop = 0;
         }
     };
@@ -554,29 +154,22 @@ function loadModule(modId) {
             html += `<h3>${sec.title}</h3>`;
         }
         html += sec.theory;
-        
-        // Append a toggle button if there are multiple sections
-        if (sections.length > 1) {
+
+        // Append a toggle button only for sections that carry a simulation
+        if (sections.length > 1 && sec.apiPath) {
             html += `
             <div style="margin-top: 20px;">
                 <button class="btn btn-outline" style="width: 100%; border-color: var(--primary); color: var(--primary);" onclick="activateSectionById('${sec.id}')">
-                    <i class="fas fa-play" style="margin-right: 8px;"></i> Load Simulation: ${sec.title || sec.id}
+                    ▶ Load Simulation: ${sec.title || sec.id}
                 </button>
             </div>`;
         }
-        
+
         secDiv.innerHTML = html;
         theoryDiv.appendChild(secDiv);
     });
-    
-    if (window.renderMathInElement) {
-        window.renderMathInElement(theoryDiv, {
-            delimiters: [
-                {left: "$$", right: "$$", display: true},
-                {left: "$", right: "$", display: false}
-            ]
-        });
-    }
+
+    renderMath(theoryDiv);
 
     // Inject Python/NumPy Code Snippet once per module (or could be per section later)
     const codeSnippet = document.getElementById("code-snippet");
@@ -586,10 +179,12 @@ function loadModule(modId) {
         codeSnippet.textContent = "# Code snippet coming soon...";
     }
     
-    // Activate first section manually to populate UI initially
-    if (sections.length > 0) {
-        document.getElementById(`section-${sections[0].id}`).classList.add('active');
-        activateSection(sections[0].id, sections[0]);
+    // Activate the first section that carries a simulation (reading-only
+    // sections still show their theory in the left pane)
+    const firstSim = sections.find(s => s.apiPath) || sections[0];
+    if (firstSim) {
+        document.getElementById(`section-${firstSim.id}`).classList.add('active');
+        activateSection(firstSim.id, firstSim);
     }
 }
 
@@ -604,13 +199,14 @@ function activateSection(sectionId, sectionData) {
     const taskHintBtn = document.getElementById("task-hint-btn");
     
     if (sectionData.task) {
-        taskMission.innerText = sectionData.task.mission;
-        taskQuestion.innerText = sectionData.task.guiding_question;
-        taskHint.innerText = sectionData.task.hint || "";
+        taskMission.innerHTML = sectionData.task.mission;
+        taskQuestion.innerHTML = sectionData.task.guiding_question;
+        taskHint.innerHTML = sectionData.task.hint || "";
         taskHint.style.display = "none";
         taskHintBtn.textContent = "Show Hint";
         taskHintBtn.style.display = sectionData.task.hint ? "inline-block" : "none";
         document.querySelector(".task-card").style.display = "block";
+        renderMath(document.querySelector(".task-card"));
     } else {
         document.querySelector(".task-card").style.display = "none";
     }
@@ -658,10 +254,11 @@ function activateSection(sectionId, sectionData) {
                 });
             }
         });
+        renderMath(controlsContainer);
     } else {
         document.querySelector(".controls-card").style.display = "none";
     }
-    
+
     // Inject metrics list
     const statsContainer = document.getElementById("stats-container");
     statsContainer.innerHTML = "";
@@ -722,6 +319,7 @@ function adjustMetricSliders(manifold) {
     }
     document.getElementById("val-u").innerText = uSlider.value;
     document.getElementById("val-v").innerText = vSlider.value;
+    renderMath(document.getElementById("controls-container"));
 }
 
 // Adjust geodesic parameters depending on selected surface
@@ -749,7 +347,10 @@ function updateSimulation() {
     if (!sectionData) {
         sectionData = { controls: mod.controls, apiPath: getLegacyApiPath(activeModule) };
     }
-    
+
+    // Reading-only sections have no simulation attached
+    if (!sectionData.apiPath) return;
+
     const params = {};
     if (sectionData.controls) {
         sectionData.controls.forEach(ctrl => {
@@ -807,16 +408,13 @@ function updateStatsUI(data) {
     }
     
     else if (activeModule === "m2_2") {
-        if (activeSectionId === "derivations" && data.gap) {
+        // covectors / differential sections receive server-formatted stats
+        if (activeSectionId === "lie_bracket" && data.gap) {
             document.getElementById("stat-gap_dist").innerText = data.gap_dist.toFixed(4);
         } else if (activeSectionId === "tangent_basis" && data.tangent_data) {
             const p = data.tangent_data.p;
             document.getElementById("stat-p_coords").innerText = `(${p[0].toFixed(2)}, ${p[1].toFixed(2)}, ${p[2].toFixed(2)})`;
             document.getElementById("stat-basis_lengths").innerText = `|∂u|=${data.tangent_data.len_eu.toFixed(2)}, |∂v|=${data.tangent_data.len_ev.toFixed(2)}`;
-        } else if (activeSectionId === "covectors" && data.scalar_val !== undefined) {
-            document.getElementById("stat-pierced_planes").innerText = data.scalar_val.toFixed(2);
-        } else if (activeSectionId === "differential" && data.df_val !== undefined) {
-            document.getElementById("stat-df_val").innerText = data.df_val.toFixed(2);
         }
     }
     
@@ -980,36 +578,36 @@ function renderPlot(data) {
             
         } else if (activeSectionId === "transition_maps" && data.transition) {
             // 2D plot for Transition Map (Inversion)
-            const uN = data.transition.workbench.steps[0].vector[0];
-            const vN = data.transition.workbench.steps[0].vector[1];
-            const uS = data.transition.u_S;
-            const vS = data.transition.v_S;
-            
+            const uN = parseFloat(document.getElementById("u_n").value);
+            const vN = parseFloat(document.getElementById("v_n").value);
+
             // Draw Equator (Unit Circle)
             const angles = Array.from({length: 100}, (_, i) => i * 2 * Math.PI / 100);
             const cx = angles.map(a => Math.cos(a));
             const cy = angles.map(a => Math.sin(a));
-            
+
             traces.push({
                 type: 'scatter', mode: 'lines',
                 x: cx, y: cy,
                 line: { color: '#4a6a40', width: 2, dash: 'dash' }, name: 'Equator'
             });
-            
+
             // Point on North Chart
             traces.push({
                 type: 'scatter', mode: 'markers',
                 x: [uN], y: [vN],
                 marker: { color: '#a3e635', size: 12 }, name: 'North Coord (u_N, v_N)'
             });
-            
-            // Mapped point on South Chart
-            traces.push({
-                type: 'scatter', mode: 'markers',
-                x: [uS], y: [vS],
-                marker: { color: '#d97706', size: 12, symbol: 'x' }, name: 'South Coord (u_S, v_S)'
-            });
-            
+
+            // Mapped point on South Chart (absent when outside the overlap)
+            if (!data.transition.domain_error) {
+                traces.push({
+                    type: 'scatter', mode: 'markers',
+                    x: [data.transition.u_S], y: [data.transition.v_S],
+                    marker: { color: '#d97706', size: 12, symbol: 'x' }, name: 'South Coord (u_S, v_S)'
+                });
+            }
+
             const layout_2d = {
                 paper_bgcolor: '#0a0e06', plot_bgcolor: '#0a0e06',
                 margin: { l: 20, r: 20, b: 20, t: 20 }, showlegend: true,
@@ -1018,7 +616,74 @@ function renderPlot(data) {
                 yaxis: { range: [-3, 3], scaleanchor: 'x', scaleratio: 1, gridcolor: '#1a2414', zerolinecolor: '#4a6a40' }
             };
             Plotly.newPlot('plotly-div', traces, layout_2d);
-            
+
+        } else if (activeSectionId === "spherical_transition" && data.spherical) {
+            // Sphere + projection ray from N through p to the equatorial plane
+            const sp = data.spherical;
+            const s = data.sphere_mesh;
+
+            traces.push({
+                type: 'surface', x: s.x, y: s.y, z: s.z,
+                opacity: 0.18, showscale: false,
+                colorscale: [[0, '#0e2010'], [1, '#1a4020']]
+            });
+            // Equatorial projection plane
+            traces.push({
+                type: 'surface', x: sp.plane.x, y: sp.plane.y, z: sp.plane.z,
+                opacity: 0.15, showscale: false,
+                colorscale: [[0, '#0a1a2a'], [1, '#0e7490']]
+            });
+            // North pole (projection center)
+            traces.push({
+                type: 'scatter3d', mode: 'markers',
+                x: [0], y: [0], z: [1],
+                marker: { color: '#d97706', size: 6, symbol: 'diamond' }, name: 'N'
+            });
+            // Point p on sphere
+            traces.push({
+                type: 'scatter3d', mode: 'markers',
+                x: [sp.p_3d[0]], y: [sp.p_3d[1]], z: [sp.p_3d[2]],
+                marker: { color: '#a3e635', size: 7 }, name: 'p'
+            });
+            // Stereographic image on the plane
+            traces.push({
+                type: 'scatter3d', mode: 'markers',
+                x: [sp.u], y: [sp.v], z: [0],
+                marker: { color: '#0e7490', size: 7, symbol: 'x' }, name: 'φ_N(p)'
+            });
+            // Projection ray N → p → plane
+            traces.push({
+                type: 'scatter3d', mode: 'lines',
+                x: [0, sp.p_3d[0], sp.u], y: [0, sp.p_3d[1], sp.v], z: [1, sp.p_3d[2], 0],
+                line: { color: '#d97706', width: 4, dash: 'dash' }
+            });
+            Plotly.newPlot('plotly-div', traces, layout_base);
+
+        } else if (activeSectionId === "mobius" && data.mobius_mesh) {
+            // Möbius band with the two overlap components shaded differently
+            const m = data.mobius_mesh;
+            const mob = data.mobius;
+
+            traces.push({
+                type: 'surface', x: m.x, y: m.y, z: m.z,
+                surfacecolor: m.c, cmin: 0, cmax: 1,
+                opacity: 0.75, showscale: false,
+                colorscale: [[0, '#14532d'], [1, '#0e4a6a']]
+            });
+            // Seam u = 0 ~ 2π, where the identification (u+2π, w) ~ (u, −w) acts
+            traces.push({
+                type: 'scatter3d', mode: 'lines',
+                x: mob.seam.x, y: mob.seam.y, z: mob.seam.z,
+                line: { color: '#d97706', width: 8 }
+            });
+            // Marker at the chosen point
+            traces.push({
+                type: 'scatter3d', mode: 'markers',
+                x: [mob.p_3d[0]], y: [mob.p_3d[1]], z: [mob.p_3d[2]],
+                marker: { color: '#a3e635', size: 7 }
+            });
+            Plotly.newPlot('plotly-div', traces, layout_base);
+
         } else if (data.sphere_mesh && data.grid_mesh) {
             // Existing Charts fallback
             const s = data.sphere_mesh;
@@ -1057,7 +722,7 @@ function renderPlot(data) {
     }
     
     else if (activeModule === "m2_2") {
-        if (activeSectionId === "derivations" && data.gap) {
+        if (activeSectionId === "lie_bracket" && data.gap) {
             // Lie bracket gap logic (2D)
             const p0 = data.p0;
             const p1m = data.path1_mid;
@@ -1100,40 +765,37 @@ function renderPlot(data) {
             traces.push({ type: 'scatter3d', mode: 'lines', x: [t.p[0], t.p[0] + t.ev[0]], y: [t.p[1], t.p[1] + t.ev[1]], z: [t.p[2], t.p[2] + t.ev[2]], line: { color: '#a3e635', width: 5 } });
             Plotly.newPlot('plotly-div', traces, layout_base);
             
-        } else if (activeSectionId === "covectors" && data.lines_x) {
-            // Covector planes
-            data.lines_x.forEach((lx, idx) => {
+        } else if (activeSectionId === "covectors" && data.covector) {
+            // df as a stack of level lines inside the tangent plane at p
+            const e = data.ellipsoid_mesh;
+            const cv = data.covector;
+            traces.push({ type: 'surface', x: e.x, y: e.y, z: e.z, opacity: 0.2, showscale: false, colorscale: [[0, '#0e2010'], [1, '#2a5030']] });
+            traces.push({ type: 'surface', x: cv.plane_x, y: cv.plane_y, z: cv.plane_z, opacity: 0.35, showscale: false, colorscale: [[0, '#0a1a2a'], [1, '#0e4a6a']] });
+            cv.lines.forEach(l => {
                 traces.push({
-                    type: 'scatter', mode: 'lines',
-                    x: [lx, lx], y: [-3, 3],
-                    line: { color: '#0e7490', width: 2 }, showlegend: false
+                    type: 'scatter3d', mode: 'lines',
+                    x: l.x, y: l.y, z: l.z,
+                    line: { color: '#0e7490', width: l.k === 0 ? 6 : 3 }
                 });
             });
+            traces.push({ type: 'scatter3d', mode: 'markers', x: [cv.p[0]], y: [cv.p[1]], z: [cv.p[2]], marker: { color: '#a3e635', size: 7 } });
+            traces.push({ type: 'scatter3d', mode: 'lines', x: [cv.p[0], cv.p[0] + cv.v_3d[0]], y: [cv.p[1], cv.p[1] + cv.v_3d[1]], z: [cv.p[2], cv.p[2] + cv.v_3d[2]], line: { color: '#d97706', width: 6 } });
+            Plotly.newPlot('plotly-div', traces, layout_base);
+
+        } else if (activeSectionId === "differential" && data.invariance) {
+            // Chart invariance: the 3D picture is chart-independent by design
+            const e = data.ellipsoid_mesh;
+            const inv = data.invariance;
+            traces.push({ type: 'surface', x: e.x, y: e.y, z: e.z, opacity: 0.25, showscale: false, colorscale: [[0, '#0e2010'], [1, '#2a5030']] });
+            // v-coordinate curve through p — the same curve in both charts
             traces.push({
-                type: 'scatter', mode: 'lines+markers',
-                x: [0, data.vector[0]], y: [0, data.vector[1]],
-                line: { color: '#a3e635', width: 4 }, marker: { size: 8, symbol: 'arrow' }, name: 'Vector V'
+                type: 'scatter3d', mode: 'lines',
+                x: inv.curve.map(q => q[0]), y: inv.curve.map(q => q[1]), z: inv.curve.map(q => q[2]),
+                line: { color: '#0e7490', width: 4, dash: 'dot' }
             });
-            const layout_2d = {
-                paper_bgcolor: '#0a0e06', plot_bgcolor: '#0a0e06', margin: { l: 20, r: 20, b: 20, t: 20 }, showlegend: true, legend: { font: { color: '#b8f7a8' } },
-                xaxis: { range: [-3, 3], title: 'X', color: '#4a6a40', gridcolor: '#1a2414' },
-                yaxis: { range: [-3, 3], title: 'Y', color: '#4a6a40', gridcolor: '#1a2414' }
-            };
-            Plotly.newPlot('plotly-div', traces, layout_2d);
-            
-        } else if (activeSectionId === "differential" && data.contour_z) {
-            traces.push({
-                type: 'contour',
-                z: data.contour_z, x: data.x_grid, y: data.y_grid,
-                colorscale: [[0, '#0a0e06'], [1, '#4a6a40']], showscale: false, contours: { coloring: 'heatmap' }
-            });
-            traces.push({
-                type: 'scatter', mode: 'lines+markers',
-                x: [data.p[0], data.p[0] + data.vector[0]], y: [data.p[1], data.p[1] + data.vector[1]],
-                line: { color: '#a3e635', width: 4 }, marker: { size: 8 }, name: 'Vector V'
-            });
-            const layout_2d = { paper_bgcolor: '#0a0e06', plot_bgcolor: '#0a0e06', margin: { l: 20, r: 20, b: 20, t: 20 }, xaxis: { color: '#4a6a40' }, yaxis: { color: '#4a6a40' } };
-            Plotly.newPlot('plotly-div', traces, layout_2d);
+            traces.push({ type: 'scatter3d', mode: 'markers', x: [inv.p[0]], y: [inv.p[1]], z: [inv.p[2]], marker: { color: '#a3e635', size: 7 } });
+            traces.push({ type: 'scatter3d', mode: 'lines', x: [inv.p[0], inv.p[0] + inv.v_3d[0]], y: [inv.p[1], inv.p[1] + inv.v_3d[1]], z: [inv.p[2], inv.p[2] + inv.v_3d[2]], line: { color: '#d97706', width: 6 } });
+            Plotly.newPlot('plotly-div', traces, layout_base);
         }
     }
     
@@ -1156,7 +818,7 @@ function renderPlot(data) {
             Plotly.newPlot('plotly-div', traces, layout_base);
         } else if (activeSectionId === "duality") {
             // Nothing to render, just algebra workbench!
-            document.getElementById("plotly-div").innerHTML = "<div style='color: #4a6a40; text-align: center; margin-top: 100px; font-size: 1.2rem;'><i class='fas fa-calculator' style='font-size: 3rem; margin-bottom: 20px; display: block;'></i>See Algebra Workbench below for step-by-step Duality proof.</div>";
+            document.getElementById("plotly-div").innerHTML = "<div style='color: #4a6a40; text-align: center; margin-top: 100px; font-size: 1.2rem;'><span style='font-size: 3rem; margin-bottom: 20px; display: block;'>∑</span>See Algebra Workbench below for step-by-step Duality proof.</div>";
         }
     }
     

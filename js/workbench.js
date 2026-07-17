@@ -4,6 +4,7 @@
  * 
  * Supports rendering types:
  *   - matrix           : Single matrix display
+ *   - formula_eval     : Line-by-line formula evaluation (for nonlinear maps)
  *   - mat_vec_mul      : Matrix × Vector = Vector with row-product expansion
  *   - mat_mat_mul      : Matrix × Matrix = Matrix
  *   - triple_product   : A × B × C = D
@@ -81,6 +82,21 @@ const WorkbenchRenderer = (() => {
 
     function renderStepMatrix(step) {
         return renderMatrixHTML(step.matrix, '');
+    }
+
+    function renderStepFormulaEval(step) {
+        let html = '';
+        if (step.lines && step.lines.length > 0) {
+            html += '<div class="wb-row-expansion">';
+            step.lines.forEach(line => {
+                html += `<div class="wb-row-line">${line.expr} = <span class="wb-row-result">${parseFloat(line.value).toFixed(4)}</span></div>`;
+            });
+            html += '</div>';
+        }
+        if (step.note) {
+            html += `<div class="wb-step-desc" style="margin-top: 8px; font-style: italic;">${step.note}</div>`;
+        }
+        return html;
     }
 
     function renderStepMatVecMul(step) {
@@ -340,6 +356,7 @@ const WorkbenchRenderer = (() => {
     function renderStepBody(step) {
         switch (step.type) {
             case 'matrix':              return renderStepMatrix(step);
+            case 'formula_eval':        return renderStepFormulaEval(step);
             case 'mat_vec_mul':         return renderStepMatVecMul(step);
             case 'mat_mat_mul':         return renderStepMatMatMul(step);
             case 'triple_product':      return renderStepTripleProduct(step);
@@ -425,7 +442,7 @@ const WorkbenchRenderer = (() => {
         }
         
         // Only render for modules with workbench data
-        const supportedModules = ['m2_1', 'm2_3', 'm2_4', 'm3_2', 'm3_3'];
+        const supportedModules = ['m2_1', 'm2_2', 'm2_3', 'm2_4', 'm3_2', 'm3_3'];
         if (!supportedModules.includes(moduleId) || !workbench) {
             container.innerHTML = `<div class="wb-empty">
                 <span class="wb-empty-icon">∂</span>
